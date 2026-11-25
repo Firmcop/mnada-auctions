@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/server';
+import { getSession, getWatchedIds } from '@/lib/supabase/server';
 import LotCard from '@/components/LotCard';
 import Countdown from '@/components/Countdown';
 import { CATEGORIES, eat, type Auction, type Lot } from '@/lib/format';
@@ -8,7 +8,8 @@ import { CheckIcon } from '@/components/Icons';
 export const dynamic = 'force-dynamic';
 
 export default async function Home() {
-  const supabase = await createClient();
+  const { supabase, user } = await getSession();
+  const watched = await getWatchedIds(supabase, user?.id);
   const [{ data: auctions }, { data: lots }] = await Promise.all([
     supabase.from('auction_auctions').select('*').eq('status', 'live').order('first_close_at'),
     supabase.from('auction_lots').select('*, auction_auctions!inner(status)').eq('status', 'open')
@@ -59,7 +60,7 @@ export default async function Home() {
           <h2>Closing soon</h2>
         </div>
         {lots && lots.length > 0 ? (
-          <div className="lot-grid">{(lots as Lot[]).map((l) => <LotCard key={l.id} lot={l} />)}</div>
+          <div className="lot-grid">{(lots as Lot[]).map((l) => <LotCard key={l.id} lot={l} watched={watched.has(l.id)} signedIn={!!user} />)}</div>
         ) : (
           <p className="muted">No lots are open right now. New auctions are added every week.</p>
         )}

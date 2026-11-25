@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { getSession } from '@/lib/supabase/server';
+import { getSession, getWatchedIds } from '@/lib/supabase/server';
+import WatchButton from '@/components/WatchButton';
 import BidPanel from './BidPanel';
 import Gallery from './Gallery';
 import { CONDITION_TAGS, kes, lotRef, SELLER_TYPES, type Auction, type Lot } from '@/lib/format';
@@ -14,6 +15,7 @@ export default async function LotPage({ params }: { params: Promise<{ id: string
   if (!data) notFound();
   const { auction_auctions: auction, ...rest } = data as Lot & { auction_auctions: Auction };
   const lot = rest as Lot;
+  const watched = await getWatchedIds(supabase, user?.id);
   let myMax: number | null = null;
   if (user) {
     const { data: m } = await supabase.from('auction_max_bids').select('max_amount').eq('lot_id', lot.id).eq('user_id', user.id).maybeSingle();
@@ -33,6 +35,7 @@ export default async function LotPage({ params }: { params: Promise<{ id: string
             <span className="eyebrow">Lot {lot.lot_no}{lot.category ? ` · ${lot.category}` : ''}{lot.location ? ` · ${lot.location}` : ''}</span>
             <h1 style={{ fontSize: 'clamp(26px, 3.4vw, 36px)' }}>{lot.title}</h1>
             <div className="row small" style={{ gap: 8 }}>
+              {lot.status === 'open' && <WatchButton variant="full" lotId={lot.id} initialWatched={watched.has(lot.id)} initialCount={lot.watch_count ?? 0} signedIn={!!user} />}
               <span className="pill pill-grey">Ref {lotRef(auction.code, lot.lot_no)}</span>
               <span className="pill pill-grey">{SELLER_TYPES[lot.seller_type] ?? 'Seller'}</span>
               {(lot.condition_tags ?? []).map((t) => (

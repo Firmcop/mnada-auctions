@@ -16,7 +16,10 @@ const NAV_CATEGORIES = [
 ];
 
 export default async function SiteLayout({ children }: { children: React.ReactNode }) {
-  const { user, profile } = await getSession();
+  const { supabase, user, profile } = await getSession();
+  const { count: unread } = user
+    ? await supabase.from('auction_notifications').select('id', { count: 'exact', head: true }).eq('user_id', user.id).is('read_at', null)
+    : { count: 0 };
   return (
     <>
       <div className="topbar">
@@ -40,6 +43,10 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
             {user ? (
               <>
                 {profile?.is_admin && <Link href="/admin" className="plain">Admin</Link>}
+                <Link href="/watchlist" className="plain">Watchlist</Link>
+                <Link href="/account/alerts" className="plain" style={{ position: 'relative' }}>
+                  Alerts{(unread ?? 0) > 0 && <span className="pill" style={{ background: 'var(--accent)', color: '#fff', marginLeft: 6, padding: '2px 7px' }}>{unread}</span>}
+                </Link>
                 <Link href="/account" className="plain">My bids</Link>
                 <form action="/auth/signout" method="post">
                   <button className="btn btn-outline btn-sm" type="submit">Log out</button>
@@ -47,6 +54,7 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
               </>
             ) : (
               <>
+                <Link href="/login?next=/watchlist" className="plain">Watchlist</Link>
                 <Link href="/login" className="plain">Log in</Link>
                 <Link href="/register" className="btn btn-primary">Register to bid</Link>
               </>

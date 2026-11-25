@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server';
+import { getSession, getWatchedIds } from '@/lib/supabase/server';
 import LotCard from '@/components/LotCard';
 import Link from 'next/link';
 import { CATEGORIES, type Lot } from '@/lib/format';
@@ -7,7 +7,8 @@ export const dynamic = 'force-dynamic';
 
 export default async function SearchPage({ searchParams }: { searchParams: Promise<{ q?: string; cat?: string }> }) {
   const { q, cat } = await searchParams;
-  const supabase = await createClient();
+  const { supabase, user } = await getSession();
+  const watched = await getWatchedIds(supabase, user?.id);
   let query = supabase.from('auction_lots').select('*, auction_auctions!inner(status)')
     .eq('auction_auctions.status', 'live').eq('status', 'open').order('closes_at').limit(60);
   if (cat) query = query.eq('category', cat);
@@ -28,7 +29,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
         ))}
       </nav>
       {lots.length ? (
-        <div className="lot-grid">{lots.map((l) => <LotCard key={l.id} lot={l} />)}</div>
+        <div className="lot-grid">{lots.map((l) => <LotCard key={l.id} lot={l} watched={watched.has(l.id)} signedIn={!!user} />)}</div>
       ) : (
         <p>No open lots match. Try another word, or check back — new auctions are added every week.</p>
       )}

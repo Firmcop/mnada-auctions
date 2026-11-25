@@ -48,3 +48,10 @@ export async function getSession() {
   const { data: profile } = await supabase.from('auction_profiles').select('*').eq('id', user.id).maybeSingle();
   return { supabase, user, profile: (profile as Profile | null) ?? null };
 }
+
+/** Lot ids the current user is watching (empty when logged out). */
+export async function getWatchedIds(supabase: Awaited<ReturnType<typeof createClient>>, userId: string | null | undefined) {
+  if (!userId) return new Set<string>();
+  const { data } = await supabase.from('auction_watch').select('lot_id').eq('user_id', userId);
+  return new Set((data ?? []).map((w) => w.lot_id as string));
+}

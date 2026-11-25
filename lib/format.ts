@@ -85,6 +85,7 @@ export type Lot = {
   status: 'open' | 'sold' | 'unsold';
   vat_on_hammer: boolean;
   condition_tags: string[];
+  watch_count: number;
   seller_type: 'own' | 'commercial' | 'receiver' | 'private';
   extra_costs: ExtraCost[];
 };
