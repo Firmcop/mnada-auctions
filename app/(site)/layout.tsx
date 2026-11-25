@@ -11,7 +11,7 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
           <span>Industrial &amp; commercial auctions across East Africa</span>
           <span className="row" style={{ gap: 18 }}>
             <Link href="/sell">Sell with us</Link>
-            <Link href="/#how">How it works</Link>
+            <Link href="/help">Help</Link>
             <span>EN · KES</span>
           </span>
         </div>
@@ -61,6 +61,12 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
           <div className="stack" style={{ gap: 8 }}>
             <span style={{ color: '#fff', fontWeight: 600 }}>Selling</span>
             <Link href="/sell">Request a valuation</Link>
+          </div>
+          <div className="stack" style={{ gap: 8 }}>
+            <span style={{ color: '#fff', fontWeight: 600 }}>Help &amp; legal</span>
+            <Link href="/help">Help &amp; FAQ</Link>
+            <Link href="/terms">Terms of sale</Link>
+            <Link href="/privacy">Privacy policy</Link>
           </div>
         </div>
       </footer>

@@ -92,7 +92,7 @@ export default function RegisterPage() {
             <label className="field">KRA PIN<input className="input" name="kra_pin" placeholder="A000000000X" required={type === 'company'} /></label>
           </div>
           <label className="field">Password<input className="input" name="password" type="password" minLength={8} required autoComplete="new-password" /></label>
-          <label className="check"><input type="checkbox" name="terms" />I accept the general terms of sale and privacy policy.</label>
+          <label className="check"><input type="checkbox" name="terms" /><span>I accept the <a href="/terms" target="_blank" rel="noreferrer">terms of sale</a> and <a href="/privacy" target="_blank" rel="noreferrer">privacy policy</a>.</span></label>
           {err && <div role="alert" className="alert alert-err">{err}</div>}
           <button type="submit" className="btn btn-primary" disabled={busy} style={{ minHeight: 52 }}>{busy ? 'Creating account…' : 'Create account'}</button>
         </form>

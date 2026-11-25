@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import { eat, kes, type Auction, type Lot } from '@/lib/format';
+import { eat, kes, lotRef, type Auction, type Lot } from '@/lib/format';
 import AuctionForm from '../AuctionForm';
 import CloseNowButton from './CloseNowButton';
 
@@ -33,7 +33,7 @@ export default async function AdminAuction({ params }: { params: Promise<{ id: s
             <tbody>
               {lots.map((l) => (
                 <tr key={l.id}>
-                  <td>{l.lot_no}</td>
+                  <td>{l.lot_no}<div className="small muted">{lotRef(a.code, l.lot_no)}</div></td>
                   <td style={{ fontWeight: 600 }}>{l.title}</td>
                   <td>{l.photos.length === 0 ? <span className="pill pill-warn">None</span> : l.photos.length}</td>
                   <td>{kes(l.start_bid)}</td>

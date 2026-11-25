@@ -1,4 +1,6 @@
 export const SITE_NAME = 'Mnada';
+/** Bump when the terms of sale change; every bid records the version accepted. */
+export const TERMS_VERSION = '2026-11-25';
 export const VAT_RATE = 0.16;
 
 export function kes(n: number | null | undefined) {
@@ -59,6 +61,7 @@ export type Auction = {
   inspection_text: string | null;
   collection_text: string | null;
   premium_pct: number;
+  code: number;
   created_at: string;
 };
 
@@ -81,7 +84,36 @@ export type Lot = {
   closes_at: string;
   status: 'open' | 'sold' | 'unsold';
   vat_on_hammer: boolean;
+  condition_tags: string[];
+  seller_type: 'own' | 'commercial' | 'receiver' | 'private';
+  extra_costs: ExtraCost[];
 };
+
+export type ExtraCost = { label: string; amount: number; mandatory: boolean };
+
+export const CONDITION_TAGS: Record<string, string> = {
+  new: 'New / unused',
+  tested: 'Tested — working at inspection',
+  not_tested: 'Not tested — sold as seen',
+  buyer_dismantles: 'Buyer dismantles & removes',
+  docs: 'Documents / manuals available',
+  spares: 'Spare parts included',
+};
+
+export const SELLER_TYPES: Record<string, string> = {
+  own: 'Mnada own stock',
+  commercial: 'Commercial seller',
+  receiver: 'Receiver / liquidator',
+  private: 'Private seller',
+};
+
+export function lotRef(auctionCode: number | null | undefined, lotNo: number) {
+  return `MN-${auctionCode ?? '000'}-${lotNo}`;
+}
+
+export function mandatoryExtras(lot: { extra_costs?: ExtraCost[] }) {
+  return (lot.extra_costs ?? []).filter((e) => e.mandatory).reduce((s, e) => s + Number(e.amount || 0), 0);
+}
 
 export const CATEGORIES = [
   'Construction & earthmoving',

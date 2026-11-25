@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { eatInputToIso, isoToEatInput } from '@/lib/eat-input';
-import { CATEGORIES, kes, photoUrl, type Lot } from '@/lib/format';
+import { CATEGORIES, CONDITION_TAGS, kes, photoUrl, SELLER_TYPES, type ExtraCost, type Lot } from '@/lib/format';
 
 type Props = {
   auctionId: string;
@@ -22,6 +22,8 @@ export default function LotForm({ auctionId, auctionTitle, lot, reserve, default
   const [startBid, setStartBid] = useState<number>(Number(lot?.start_bid ?? 0));
   const [photos, setPhotos] = useState<string[]>(lot?.photos ?? []);
   const [specs, setSpecs] = useState<[string, string][]>(lot?.specs?.length ? lot.specs : [['Make / model', ''], ['Year', '']]);
+  const [tags, setTags] = useState<string[]>(lot?.condition_tags ?? []);
+  const [extras, setExtras] = useState<ExtraCost[]>(lot?.extra_costs ?? []);
   const [uploading, setUploading] = useState(false);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
@@ -71,6 +73,9 @@ export default function LotForm({ auctionId, auctionTitle, lot, reserve, default
       start_bid: startBid,
       closes_at: eatInputToIso(g('closes_at')),
       vat_on_hammer: f.get('vat_on_hammer') === 'on',
+      condition_tags: tags,
+      seller_type: g('seller_type') || 'own',
+      extra_costs: extras.filter((x) => x.label.trim() && Number(x.amount) > 0).map((x) => ({ label: x.label.trim(), amount: Number(x.amount), mandatory: x.mandatory })),
     };
     const reserveVal = g('reserve').replace(/[^0-9]/g, '');
     setBusy(true);
@@ -117,6 +122,21 @@ export default function LotForm({ auctionId, auctionTitle, lot, reserve, default
             <label className="field">Location<input className="input" name="location" defaultValue={lot?.location ?? ''} /></label>
           </div>
           <label className="field">Condition notes<textarea className="input" name="description" rows={4} defaultValue={lot?.description ?? ''} /></label>
+          <div className="grid2">
+            <label className="field">Seller
+              <select className="input" name="seller_type" defaultValue={lot?.seller_type ?? 'own'}>
+                {Object.entries(SELLER_TYPES).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+              </select>
+            </label>
+          </div>
+          <fieldset style={{ border: 0, padding: 0, margin: 0 }} className="stack">
+            <legend style={{ fontSize: 14, fontWeight: 600, marginBottom: 8, padding: 0 }}>Condition tags</legend>
+            <div className="row" style={{ gap: '8px 18px' }}>
+              {Object.entries(CONDITION_TAGS).map(([v, l]) => (
+                <label key={v} className="check"><input type="checkbox" checked={tags.includes(v)} onChange={(e) => setTags((t) => e.target.checked ? [...t, v] : t.filter((x) => x !== v))} />{l}</label>
+              ))}
+            </div>
+          </fieldset>
         </section>
 
         <section className="panel stack" style={{ gap: 12 }}>
@@ -152,6 +172,20 @@ export default function LotForm({ auctionId, auctionTitle, lot, reserve, default
             </div>
           ))}
           <button type="button" className="btn btn-outline btn-sm" style={{ alignSelf: 'flex-start' }} onClick={() => setSpecs((s) => [...s, ['', '']])}>+ Add specification</button>
+        </section>
+
+        <section className="panel stack" style={{ gap: 10 }}>
+          <h3>Additional costs</h3>
+          <p className="small muted">E.g. loading fee, crane offloading, delivery, assembly. Mandatory costs are added to the winner&apos;s invoice (plus 16% VAT); optional ones are shown as available on request.</p>
+          {extras.map((x, i) => (
+            <div key={i} className="row" style={{ gap: 8, flexWrap: 'nowrap' }}>
+              <input className="input" aria-label="Cost description" placeholder="e.g. Loading onto buyer's truck" value={x.label} onChange={(e) => setExtras((xs) => xs.map((y, j) => (j === i ? { ...y, label: e.target.value } : y)))} />
+              <input className="input" aria-label="Amount in KES" inputMode="numeric" placeholder="KES" style={{ maxWidth: 150 }} value={x.amount ? kes(x.amount) : ''} onChange={(e) => setExtras((xs) => xs.map((y, j) => (j === i ? { ...y, amount: parseInt(e.target.value.replace(/[^0-9]/g, ''), 10) || 0 } : y)))} />
+              <label className="check" style={{ whiteSpace: 'nowrap' }}><input type="checkbox" checked={x.mandatory} onChange={(e) => setExtras((xs) => xs.map((y, j) => (j === i ? { ...y, mandatory: e.target.checked } : y)))} />Mandatory</label>
+              <button type="button" className="btn btn-outline" aria-label="Remove cost" onClick={() => setExtras((xs) => xs.filter((_, j) => j !== i))}>✕</button>
+            </div>
+          ))}
+          <button type="button" className="btn btn-outline btn-sm" style={{ alignSelf: 'flex-start' }} onClick={() => setExtras((xs) => [...xs, { label: '', amount: 0, mandatory: true }])}>+ Add cost</button>
         </section>
 
         <section className="panel stack" style={{ gap: 14 }}>

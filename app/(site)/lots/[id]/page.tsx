@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import { getSession } from '@/lib/supabase/server';
 import BidPanel from './BidPanel';
 import Gallery from './Gallery';
-import type { Auction, Lot } from '@/lib/format';
+import { CONDITION_TAGS, kes, lotRef, SELLER_TYPES, type Auction, type Lot } from '@/lib/format';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,6 +32,13 @@ export default async function LotPage({ params }: { params: Promise<{ id: string
           <div className="stack" style={{ gap: 8 }}>
             <span className="eyebrow">Lot {lot.lot_no}{lot.category ? ` · ${lot.category}` : ''}{lot.location ? ` · ${lot.location}` : ''}</span>
             <h1 style={{ fontSize: 'clamp(26px, 3.4vw, 36px)' }}>{lot.title}</h1>
+            <div className="row small" style={{ gap: 8 }}>
+              <span className="pill pill-grey">Ref {lotRef(auction.code, lot.lot_no)}</span>
+              <span className="pill pill-grey">{SELLER_TYPES[lot.seller_type] ?? 'Seller'}</span>
+              {(lot.condition_tags ?? []).map((t) => (
+                <span key={t} className={`pill ${t === 'not_tested' || t === 'buyer_dismantles' ? 'pill-warn' : 'pill-green'}`}>{CONDITION_TAGS[t] ?? t}</span>
+              ))}
+            </div>
           </div>
           <Gallery photos={lot.photos ?? []} title={lot.title} />
           {lot.specs?.length > 0 && (
@@ -52,10 +59,23 @@ export default async function LotPage({ params }: { params: Promise<{ id: string
               <p style={{ color: '#2D3540', whiteSpace: 'pre-line' }}>{lot.description}</p>
             </section>
           )}
+          {(lot.extra_costs ?? []).length > 0 && (
+            <section className="stack">
+              <h3 style={{ fontSize: 22 }}>Additional costs</h3>
+              <div style={{ borderTop: '1px solid var(--line)' }}>
+                {lot.extra_costs.map((e) => (
+                  <div key={e.label} className="row between" style={{ padding: '11px 0', borderBottom: '1px solid var(--line)' }}>
+                    <span>{e.label} <span className={`pill ${e.mandatory ? 'pill-warn' : 'pill-grey'}`} style={{ marginLeft: 6 }}>{e.mandatory ? 'Mandatory — added to invoice' : 'Optional — on request'}</span></span>
+                    <span style={{ fontWeight: 600 }}>KES {kes(e.amount)} + VAT</span>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
           <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14 }}>
             {auction.inspection_text && <div style={{ background: 'var(--surface)', borderRadius: 12, padding: 18 }}><b>Inspection</b><p className="small" style={{ marginTop: 6 }}>{auction.inspection_text}</p></div>}
             {auction.collection_text && <div style={{ background: 'var(--surface)', borderRadius: 12, padding: 18 }}><b>Collection</b><p className="small" style={{ marginTop: 6 }}>{auction.collection_text}</p></div>}
-            <div style={{ background: 'var(--surface)', borderRadius: 12, padding: 18 }}><b>Fees</b><p className="small" style={{ marginTop: 6 }}>Buyer&apos;s premium {auction.premium_pct}% + 16% VAT on the premium{lot.vat_on_hammer ? ', plus 16% VAT on the hammer price' : ''}.</p></div>
+            <div style={{ background: 'var(--surface)', borderRadius: 12, padding: 18 }}><b>Fees</b><p className="small" style={{ marginTop: 6 }}>Buyer&apos;s premium {auction.premium_pct}% + 16% VAT on the premium{lot.vat_on_hammer ? ', plus 16% VAT on the hammer price' : ''}. <a href="/help#costs">How costs work</a></p></div>
           </section>
         </div>
         <aside style={{ flex: '1 1 360px', minWidth: 0, position: 'sticky', top: 16 }}>

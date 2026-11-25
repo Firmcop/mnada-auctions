@@ -33,7 +33,8 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
           <div className="row between"><span className="muted">Billed to</span><span>{profile?.company_name || profile?.full_name}{profile?.kra_pin ? ` · PIN ${profile.kra_pin}` : ''}</span></div>
           <div className="row between"><span className="muted">Hammer price</span><span>KES {kes(inv.hammer)}</span></div>
           <div className="row between"><span className="muted">Buyer&apos;s premium ({auction?.premium_pct}%)</span><span>KES {kes(inv.premium)}</span></div>
-          <div className="row between"><span className="muted">VAT (16%){lot?.vat_on_hammer ? ' on premium and hammer' : ' on premium'}</span><span>KES {kes(inv.vat)}</span></div>
+          {Number(inv.extras) > 0 && <div className="row between"><span className="muted">Additional costs (loading, delivery, etc.)</span><span>KES {kes(inv.extras)}</span></div>}
+          <div className="row between"><span className="muted">VAT (16%){lot?.vat_on_hammer ? ' on fees and hammer' : ' on fees'}</span><span>KES {kes(inv.vat)}</span></div>
           <div className="row between" style={{ fontWeight: 700, fontSize: 16, borderTop: '1px dashed var(--field)', paddingTop: 8 }}><span>Total</span><span>KES {kes(inv.total)}</span></div>
           {Number(inv.paid) > 0 && <div className="row between"><span className="muted">Received</span><span>KES {kes(inv.paid)}</span></div>}
         </div>
