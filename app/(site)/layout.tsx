@@ -1,6 +1,19 @@
 import Link from 'next/link';
 import { getSession } from '@/lib/supabase/server';
-import { GavelIcon, SearchIcon } from '@/components/Icons';
+import { GavelIcon } from '@/components/Icons';
+import SearchBox from '@/components/SearchBox';
+
+const NAV_CATEGORIES = [
+  'Construction & earthmoving',
+  'Metalworking',
+  'Lifting & handling',
+  'Trucks & transport',
+  'Container houses & modular',
+  'Steel structures',
+  'Agriculture',
+  'Woodworking',
+  'Food processing',
+];
 
 export default async function SiteLayout({ children }: { children: React.ReactNode }) {
   const { user, profile } = await getSession();
@@ -22,11 +35,7 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
             <span className="logo-mark"><GavelIcon /></span>
             <span className="logo-word">mnada</span>
           </Link>
-          <form className="search" role="search" action="/search">
-            <label htmlFor="q" className="sr">Search lots</label>
-            <input id="q" name="q" type="search" placeholder="Search excavators, containers, welders, trucks…" />
-            <button type="submit" aria-label="Search"><SearchIcon /></button>
-          </form>
+          <SearchBox />
           <nav className="nav" aria-label="Account">
             {user ? (
               <>
@@ -44,6 +53,14 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
             )}
           </nav>
         </div>
+        <nav aria-label="Categories" className="catnav">
+          <div className="wrap">
+            {NAV_CATEGORIES.map((c) => (
+              <Link key={c} href={`/search?cat=${encodeURIComponent(c)}`}>{c}</Link>
+            ))}
+            <Link href="/search">All categories</Link>
+          </div>
+        </nav>
       </header>
       <main>{children}</main>
       <footer className="footer">

@@ -87,6 +87,12 @@ textarea.input { height: auto; padding: 12px 14px; resize: vertical; }
 .nav a.plain { text-decoration: none; font-weight: 500; padding: 10px 4px; }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
+/* Category menu */
+.catnav .wrap { display: flex; gap: 4px 22px; overflow-x: auto; white-space: nowrap; padding-top: 0; padding-bottom: 4px; scrollbar-width: none; }
+.catnav .wrap::-webkit-scrollbar { display: none; }
+.catnav a { text-decoration: none; font-size: 14px; font-weight: 500; padding: 10px 0; color: var(--navy); }
+.catnav a:hover { color: var(--accent-text); }
+
 /* Lot cards */
 .lot-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 22px; }
 .lot-card { display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: #fff; text-decoration: none; color: inherit; }

@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import LotCard from '@/components/LotCard';
-import type { Lot } from '@/lib/format';
+import Link from 'next/link';
+import { CATEGORIES, type Lot } from '@/lib/format';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,7 +20,13 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
   return (
     <div className="wrap section">
       <h1 style={{ marginBottom: 6 }}>{cat ? cat : q ? `Results for “${q}”` : 'All open lots'}</h1>
-      <p className="muted" style={{ marginBottom: 24 }}>{lots.length} open lots</p>
+      <p className="muted" style={{ marginBottom: 16 }}>{lots.length} open lots</p>
+      <nav aria-label="Filter by category" className="row" style={{ gap: 8, marginBottom: 24 }}>
+        <Link href={q ? `/search?q=${encodeURIComponent(q)}` : '/search'} className={`btn btn-sm ${!cat ? 'btn-dark' : 'btn-outline'}`}>All</Link>
+        {CATEGORIES.filter((c) => c !== 'Other').map((c) => (
+          <Link key={c} href={`/search?cat=${encodeURIComponent(c)}${q ? `&q=${encodeURIComponent(q)}` : ''}`} className={`btn btn-sm ${cat === c ? 'btn-dark' : 'btn-outline'}`}>{c}</Link>
+        ))}
+      </nav>
       {lots.length ? (
         <div className="lot-grid">{lots.map((l) => <LotCard key={l.id} lot={l} />)}</div>
       ) : (
