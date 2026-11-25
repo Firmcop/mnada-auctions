@@ -1,0 +1,98 @@
+export const SITE_NAME = 'Mnada';
+export const VAT_RATE = 0.16;
+
+export function kes(n: number | null | undefined) {
+  if (n === null || n === undefined) return '—';
+  return Math.round(Number(n)).toLocaleString('en-US');
+}
+
+/** Mirrors public.auction_increment in the database. */
+export function increment(p: number) {
+  if (p < 50000) return 1000;
+  if (p < 200000) return 5000;
+  if (p < 1000000) return 20000;
+  if (p < 5000000) return 50000;
+  return 100000;
+}
+
+export function minNextBid(lot: { bid_count: number; start_bid: number; current_bid: number | null }) {
+  if (lot.bid_count === 0 || lot.current_bid === null) return Number(lot.start_bid);
+  return Number(lot.current_bid) + increment(Number(lot.current_bid));
+}
+
+export function timeLeft(closesAt: string | Date, now = Date.now()) {
+  const ms = new Date(closesAt).getTime() - now;
+  if (ms <= 0) return 'Closed';
+  const s = Math.floor(ms / 1000);
+  const d = Math.floor(s / 86400);
+  const h = Math.floor((s % 86400) / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  if (d > 0) return `${d}d ${String(h).padStart(2, '0')}h ${String(m).padStart(2, '0')}m`;
+  if (h > 0) return `${h}h ${String(m).padStart(2, '0')}m ${String(sec).padStart(2, '0')}s`;
+  return `${m}m ${String(sec).padStart(2, '0')}s`;
+}
+
+export function eat(d: string | Date, withTime = true) {
+  return new Date(d).toLocaleString('en-GB', {
+    timeZone: 'Africa/Nairobi',
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    ...(withTime ? { hour: '2-digit', minute: '2-digit' } : {}),
+  }) + (withTime ? ' EAT' : '');
+}
+
+export function photoUrl(path: string) {
+  if (path.startsWith('http')) return path;
+  return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/auction-photos/${path}`;
+}
+
+export type Auction = {
+  id: string;
+  slug: string;
+  title: string;
+  description: string | null;
+  location: string | null;
+  status: 'draft' | 'live' | 'closed';
+  first_close_at: string | null;
+  inspection_text: string | null;
+  collection_text: string | null;
+  premium_pct: number;
+  created_at: string;
+};
+
+export type Lot = {
+  id: string;
+  auction_id: string;
+  lot_no: number;
+  title: string;
+  category: string | null;
+  description: string | null;
+  specs: [string, string][];
+  photos: string[];
+  location: string | null;
+  start_bid: number;
+  current_bid: number | null;
+  bid_count: number;
+  leader_id: string | null;
+  reserve_met: boolean;
+  has_reserve: boolean;
+  closes_at: string;
+  status: 'open' | 'sold' | 'unsold';
+  vat_on_hammer: boolean;
+};
+
+export const CATEGORIES = [
+  'Construction & earthmoving',
+  'Metalworking',
+  'Welding',
+  'Lifting & handling',
+  'Trucks & transport',
+  'Container houses & modular',
+  'Steel structures',
+  'Agriculture',
+  'Woodworking',
+  'Food processing',
+  'Other',
+];
