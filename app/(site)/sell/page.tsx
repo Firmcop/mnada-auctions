@@ -28,6 +28,11 @@ export default function SellPage() {
           <span className="eyebrow" style={{ color: '#F5A27A' }}>For companies, receivers and asset owners</span>
           <h1 style={{ color: '#fff', maxWidth: 860, fontSize: 'clamp(32px, 4.6vw, 52px)' }}>Turn idle machinery, fleets and whole sites into cash.</h1>
           <p style={{ color: '#C9D5DF', fontSize: 18, maxWidth: 680 }}>We value your assets, photograph and list them, bring verified buyers to the viewing day, collect payment and manage collection.</p>
+          <div className="row" style={{ marginTop: 8 }}>
+            <a href="/account/seller" className="btn btn-primary">Open a seller account</a>
+            <a href="#form" className="btn" style={{ border: '1.5px solid #fff', color: '#fff' }}>Request a valuation</a>
+          </div>
+          <span className="small" style={{ color: '#AFC0CD' }}>Seller account: list items yourself for direct sale or send them for auction, and follow enquiries and sales online. Valuation: we do it for you.</span>
         </div>
       </section>
       <div className="wrap section stack" style={{ gap: 48 }}>

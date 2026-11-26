@@ -89,6 +89,7 @@ export type Lot = {
   vat_on_hammer: boolean;
   condition_tags: string[];
   watch_count: number;
+  seller_id?: string | null;
   seo_title?: string | null;
   seo_description?: string | null;
   seller_type: 'own' | 'commercial' | 'receiver' | 'private';
@@ -144,6 +145,9 @@ export type Listing = {
   status: 'draft' | 'active' | 'reserved' | 'sold';
   featured: boolean;
   sku: string | null;
+  owner_id: string | null;
+  review_status: 'approved' | 'pending' | 'rejected';
+  review_note: string | null;
   seo_title: string | null;
   seo_description: string | null;
   created_at: string;

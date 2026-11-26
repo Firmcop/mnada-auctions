@@ -9,7 +9,9 @@ import { slugify } from '@/lib/eat-input';
 import { subsOf } from '@/lib/categories';
 import { CATEGORIES, CONDITION_TAGS, kes, photoUrl, SELLER_TYPES, type Listing } from '@/lib/format';
 
-export default function ListingForm({ listing }: { listing?: Listing }) {
+export default function ListingForm({ listing, mode = 'admin', userId }: { listing?: Listing; mode?: 'admin' | 'seller'; userId?: string }) {
+  const seller = mode === 'seller';
+  const base = seller ? '/seller/listings' : '/admin/listings';
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
   const id = useMemo(() => listing?.id ?? crypto.randomUUID(), [listing]);
@@ -29,7 +31,7 @@ export default function ListingForm({ listing }: { listing?: Listing }) {
     const files = Array.from(e.target.files ?? []);
     setUploading(true);
     for (const file of files) {
-      const r = await uploadPhoto(supabase, `listings/${id}`, file);
+      const r = await uploadPhoto(supabase, seller ? `sellers/${userId}/listings/${id}` : `listings/${id}`, file);
       if (r.error || !r.path) setMsg({ ok: false, text: `Upload failed: ${r.error}` });
       else setPhotos((p) => [...p, r.path as string]);
     }
@@ -64,9 +66,9 @@ export default function ListingForm({ listing }: { listing?: Listing }) {
       stock: Number(g('stock') || 1),
       lead_time: g('lead_time') || null,
       condition_tags: tags,
-      seller_type: g('seller_type') || 'own',
-      status: g('status'),
-      featured: f.get('featured') === 'on',
+      ...(seller
+        ? { status: listing ? (g('status') || listing.status) : 'draft' }
+        : { seller_type: g('seller_type') || 'own', status: g('status'), featured: f.get('featured') === 'on' }),
       updated_at: new Date().toISOString(),
     };
     if (priceType !== 'on_request' && !price) { setMsg({ ok: false, text: 'Enter a price, or choose "Price on request".' }); return; }
@@ -74,11 +76,14 @@ export default function ListingForm({ listing }: { listing?: Listing }) {
     setMsg(null);
     const { error } = listing
       ? await supabase.from('auction_listings').update(row).eq('id', id)
-      : await supabase.from('auction_listings').insert(row);
+      : await supabase.from('auction_listings').insert(
+        (seller
+          ? { ...row, owner_id: userId, status: 'draft', review_status: 'pending', featured: false, seller_type: 'commercial' }
+          : row) as Record<string, unknown>);
     setBusy(false);
     if (error) { setMsg({ ok: false, text: error.message }); return; }
-    if (!listing) { router.replace(`/admin/listings/${id}?saved=1`); return; }
-    setMsg({ ok: true, text: 'Saved.' });
+    if (!listing) { router.replace(`${base}/${id}?saved=1`); return; }
+    setMsg({ ok: true, text: seller ? 'Saved. Changes to the listing are checked by our team before they go live.' : 'Saved.' });
     router.refresh();
   }
 
@@ -89,16 +94,17 @@ export default function ListingForm({ listing }: { listing?: Listing }) {
     const { error } = await supabase.from('auction_listings').insert({
       ...rest, id: newId, title: `${listing.title} (copy)`, slug: `${listing.slug.replace(/-[a-z0-9]{4}$/, '')}-${Math.random().toString(36).slice(2, 6)}`,
       sku: null, status: 'draft', featured: false, updated_at: new Date().toISOString(),
+      ...(seller ? { review_status: 'pending', review_note: null } : {}),
     });
     if (error) { setMsg({ ok: false, text: error.message }); return; }
-    router.push(`/admin/listings/${newId}?saved=1`);
+    router.push(`${base}/${newId}?saved=1`);
   }
 
   async function remove() {
     if (!listing || !window.confirm('Delete this item and its enquiries? This cannot be undone.')) return;
     const { error } = await supabase.from('auction_listings').delete().eq('id', listing.id);
     if (error) { setMsg({ ok: false, text: error.message }); return; }
-    router.replace('/admin/listings');
+    router.replace(base);
   }
 
   return (
@@ -121,9 +127,11 @@ export default function ListingForm({ listing }: { listing?: Listing }) {
               </select>
             </label>
             <label className="field">Location<input className="input" name="location" defaultValue={listing?.location ?? 'Ruiru'} /></label>
-            <label className="field">Seller
-              <select className="input" name="seller_type" defaultValue={listing?.seller_type ?? 'own'}>{Object.entries(SELLER_TYPES).map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select>
-            </label>
+            {!seller && (
+              <label className="field">Seller
+                <select className="input" name="seller_type" defaultValue={listing?.seller_type ?? 'own'}>{Object.entries(SELLER_TYPES).map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select>
+              </label>
+            )}
           </div>
           <label className="field">Description<textarea className="input" name="description" rows={5} defaultValue={listing?.description ?? ''} /></label>
           <div className="row" style={{ gap: '8px 18px' }}>
@@ -192,19 +200,31 @@ export default function ListingForm({ listing }: { listing?: Listing }) {
           )}
           <div className="grid2" style={{ gap: 10 }}>
             <label className="field">In stock<input className="input" name="stock" type="number" min="0" defaultValue={listing?.stock ?? 1} /></label>
+            {seller ? (
+              listing && listing.status !== 'draft' ? (
+                <label className="field">Availability
+                  <select className="input" name="status" defaultValue={listing.status}>
+                    {listing.status === 'active' && <option value="active">Available</option>}
+                    <option value="reserved">Reserved</option><option value="sold">Sold</option>
+                  </select>
+                </label>
+              ) : <div className="small"><span className="eyebrow">Status</span><div>{!listing ? 'New — will be reviewed' : listing.review_status === 'rejected' ? 'Changes needed' : 'Waiting for review'}</div></div>
+            ) : (
             <label className="field">Status
-              <select className="input" name="status" defaultValue={listing?.status ?? 'draft'}>
-                <option value="draft">Draft (hidden)</option><option value="active">Active</option><option value="reserved">Reserved</option><option value="sold">Sold</option>
-              </select>
-            </label>
+                <select className="input" name="status" defaultValue={listing?.status ?? 'draft'}>
+                  <option value="draft">Draft (hidden)</option><option value="active">Active</option><option value="reserved">Reserved</option><option value="sold">Sold</option>
+                </select>
+              </label>
+            )}
           </div>
           <label className="field">Lead time<input className="input" name="lead_time" placeholder="e.g. 3–4 weeks from order" defaultValue={listing?.lead_time ?? ''} /></label>
-          <label className="check"><input type="checkbox" name="featured" defaultChecked={listing?.featured ?? false} />Feature on homepage and menu</label>
+          {!seller && <label className="check"><input type="checkbox" name="featured" defaultChecked={listing?.featured ?? false} />Feature on homepage and menu</label>}
+          {seller && listing?.review_status === 'rejected' && listing.review_note && <div className="alert alert-err small">Our team asked for changes: {listing.review_note}</div>}
         </section>
         {msg && <div role="status" className={`alert ${msg.ok ? 'alert-ok' : 'alert-err'}`}>{msg.text}</div>}
-        <button className="btn btn-primary" type="submit" disabled={busy || uploading}>{busy ? 'Saving…' : listing ? 'Save item' : 'Create item'}</button>
+        <button className="btn btn-primary" type="submit" disabled={busy || uploading}>{busy ? 'Saving…' : seller ? (listing ? 'Save and send for review' : 'Submit for review') : listing ? 'Save item' : 'Create item'}</button>
         {listing && <button type="button" className="btn btn-outline" onClick={duplicate}>Duplicate as new draft</button>}
-        {listing && <button type="button" className="btn btn-outline" style={{ color: 'var(--danger)' }} onClick={remove}>Delete item</button>}
+        {listing && !seller && <button type="button" className="btn btn-outline" style={{ color: 'var(--danger)' }} onClick={remove}>Delete item</button>}
       </aside>
     </form>
   );

@@ -14,7 +14,19 @@ export default async function AdminHome() {
     supabase.from('auction_valuations').select('id', { count: 'exact', head: true }).gte('created_at', new Date(Date.now() - 7 * 86400000).toISOString()),
     supabase.from('auction_bids').select('amount, created_at, is_auto, auction_lots(lot_no, title)').order('created_at', { ascending: false }).limit(8),
   ]);
-  const { count: newEnquiries } = await supabase.from('auction_enquiries').select('id', { count: 'exact', head: true }).eq('status', 'new');
+  const [{ count: newEnquiries }, { count: sellerApps }, { count: listingReviews }, { count: consignments }, { count: aiPayments }] = await Promise.all([
+    supabase.from('auction_enquiries').select('id', { count: 'exact', head: true }).eq('status', 'new'),
+    supabase.from('auction_profiles').select('id', { count: 'exact', head: true }).eq('seller_status', 'pending'),
+    supabase.from('auction_listings').select('id', { count: 'exact', head: true }).eq('review_status', 'pending'),
+    supabase.from('auction_consignments').select('id', { count: 'exact', head: true }).eq('status', 'submitted'),
+    supabase.from('auction_ai_payments').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+  ]);
+  const todo: [number, string, string][] = ([
+    [sellerApps ?? 0, 'seller applications', '/admin/sellers'],
+    [listingReviews ?? 0, 'seller listings to review', '/admin/listings'],
+    [consignments ?? 0, 'items sent for auction', '/admin/consignments'],
+    [aiPayments ?? 0, 'AI payments to confirm', '/admin/ai'],
+  ] as [number, string, string][]).filter(([n]) => n > 0);
   const lots = openLots.data ?? [];
   const owed = (unpaid.data ?? []).reduce((s, i) => s + Number(i.total) - Number(i.paid), 0);
 
@@ -27,6 +39,12 @@ export default async function AdminHome() {
         </div>
         <Link href="/admin/auctions" className="btn btn-primary">Add auction or lot</Link>
       </div>
+      {todo.length > 0 && (
+        <div className="alert alert-info row" style={{ gap: '6px 18px' }}>
+          <b>To do:</b>
+          {todo.map(([n, label, href]) => <Link key={href} href={href}>{n} {label}</Link>)}
+        </div>
+      )}
       <div className="kpis">
         <div className="kpi"><span className="eyebrow">Lots open</span><b>{lots.length}</b></div>
         <div className="kpi"><span className="eyebrow">Bids, last 24 h</span><b>{bidsToday.count ?? 0}</b></div>

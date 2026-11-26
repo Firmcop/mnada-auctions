@@ -37,6 +37,14 @@ export type Profile = {
   bidder_no: number;
   doc_path: string | null;
   email: string | null;
+  seller_status: 'none' | 'pending' | 'approved' | 'rejected' | 'suspended';
+  business_name: string | null;
+  business_description: string | null;
+  business_location: string | null;
+  payout_method: 'mpesa' | 'bank' | null;
+  payout_details: string | null;
+  commission_pct: number;
+  seller_applied_at: string | null;
   created_at: string;
 };
 

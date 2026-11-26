@@ -48,6 +48,7 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
             {user ? (
               <>
                 {profile?.is_admin && <Link href="/admin" className="plain">Admin</Link>}
+                {profile?.seller_status === 'approved' && <Link href="/seller" className="plain">Seller portal</Link>}
                 <Link href="/watchlist" className="plain">Watchlist</Link>
                 <Link href="/account/alerts" className="plain" style={{ position: 'relative' }}>
                   Alerts{(unread ?? 0) > 0 && <span className="pill" style={{ background: 'var(--accent)', color: '#fff', marginLeft: 6, padding: '2px 7px' }}>{unread}</span>}

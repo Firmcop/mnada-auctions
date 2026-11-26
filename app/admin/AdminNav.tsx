@@ -8,7 +8,10 @@ const ITEMS = [
   ['/admin/listings', 'Direct sale'],
   ['/admin/enquiries', 'Enquiries & offers'],
   ['/admin/import', 'Bulk import'],
+  ['/admin/ai', 'AI tools & billing'],
   ['/admin/bidders', 'Bidders'],
+  ['/admin/sellers', 'Sellers'],
+  ['/admin/consignments', 'Items sent for auction'],
   ['/admin/invoices', 'Payments & collection'],
   ['/admin/valuations', 'Valuation requests'],
 ];
