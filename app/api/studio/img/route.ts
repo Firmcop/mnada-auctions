@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 
 /** Same-origin copy of a lot photo so Studio can draw it on a canvas and export the video. */
 const allowed = () => {
-  const hosts = new Set(['commons.wikimedia.org', 'upload.wikimedia.org']);
+  const hosts = new Set(['commons.wikimedia.org', 'upload.wikimedia.org', 'thumb.wikimedia.org']);
   try { hosts.add(new URL(process.env.NEXT_PUBLIC_SUPABASE_URL!).host); } catch { /* not set */ }
   return hosts;
 };
