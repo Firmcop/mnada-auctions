@@ -4,9 +4,23 @@ import { getSession, getWatchedIds } from '@/lib/supabase/server';
 import WatchButton from '@/components/WatchButton';
 import BidPanel from './BidPanel';
 import Gallery from './Gallery';
-import { CONDITION_TAGS, kes, lotRef, SELLER_TYPES, type Auction, type Lot } from '@/lib/format';
+import type { Metadata } from 'next';
+import { CONDITION_TAGS, kes, lotRef, photoUrl, SELLER_TYPES, type Auction, type Lot } from '@/lib/format';
+import { jsonLd, lotSeoDescription, lotSeoTitle, SITE_URL } from '@/lib/seo';
+import { createClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params;
+  const supabase = await createClient();
+  const { data } = await supabase.from('auction_lots').select('id, title, lot_no, description, location, closes_at, photos, seo_title, seo_description').eq('id', id).maybeSingle();
+  if (!data) return {};
+  const title = lotSeoTitle(data);
+  const description = lotSeoDescription(data);
+  const images = (data.photos ?? []).slice(0, 1).map((p: string) => ({ url: photoUrl(p), alt: data.title }));
+  return { title, description, alternates: { canonical: `/lots/${id}` }, openGraph: { title, description, images, url: `/lots/${id}` } };
+}
 
 export default async function LotPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -22,8 +36,40 @@ export default async function LotPage({ params }: { params: Promise<{ id: string
     myMax = m ? Number(m.max_amount) : null;
   }
 
+  const ld = [
+    {
+      '@context': 'https://schema.org',
+      '@type': 'Product',
+      name: lot.title,
+      description: lot.description ?? undefined,
+      image: (lot.photos ?? []).map(photoUrl),
+      sku: lotRef(auction.code, lot.lot_no),
+      category: [lot.category, lot.subcategory].filter(Boolean).join(' > ') || undefined,
+      offers: {
+        '@type': 'Offer',
+        url: `${SITE_URL}/lots/${lot.id}`,
+        priceCurrency: 'KES',
+        price: Number(lot.bid_count > 0 ? lot.current_bid : lot.start_bid),
+        availability: lot.status === 'open' ? 'https://schema.org/InStock' : 'https://schema.org/SoldOut',
+        priceValidUntil: lot.closes_at.slice(0, 10),
+        itemCondition: lot.condition_tags?.includes('new') ? 'https://schema.org/NewCondition' : 'https://schema.org/UsedCondition',
+        seller: { '@type': 'Organization', name: 'Mnada' },
+      },
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Home', item: SITE_URL },
+        { '@type': 'ListItem', position: 2, name: auction.title, item: `${SITE_URL}/auctions/${auction.slug}` },
+        { '@type': 'ListItem', position: 3, name: `Lot ${lot.lot_no}` },
+      ],
+    },
+  ];
+
   return (
     <div className="wrap" style={{ padding: '20px 24px 40px' }}>
+      <script type="application/ld+json" dangerouslySetInnerHTML={jsonLd(ld)} />
       <nav aria-label="Breadcrumb" className="small muted row" style={{ gap: 8 }}>
         <Link href="/" style={{ color: 'var(--muted)' }}>Home</Link><span>/</span>
         <Link href={`/auctions/${auction.slug}`} style={{ color: 'var(--muted)' }}>{auction.title}</Link><span>/</span>

@@ -3,9 +3,18 @@ import { getSession, getWatchedIds } from '@/lib/supabase/server';
 import LotCard from '@/components/LotCard';
 import ListingCard from '@/components/ListingCard';
 import { CATEGORY_TREE, searchHref, subsOf } from '@/lib/categories';
+import type { Metadata } from 'next';
 import type { Listing, Lot } from '@/lib/format';
+import { categorySeo } from '@/lib/seo';
 
 export const dynamic = 'force-dynamic';
+
+export async function generateMetadata({ searchParams }: { searchParams: Promise<{ q?: string; cat?: string; sub?: string }> }): Promise<Metadata> {
+  const { q, cat, sub } = await searchParams;
+  const seo = categorySeo(cat, sub);
+  const canonical = cat ? `/search?cat=${encodeURIComponent(cat)}${sub ? `&sub=${encodeURIComponent(sub)}` : ''}` : '/search';
+  return { title: q && !cat ? `Search: ${q}` : seo.title, description: seo.description, alternates: { canonical }, robots: q ? { index: false, follow: true } : undefined };
+}
 
 export default async function SearchPage({ searchParams }: { searchParams: Promise<{ q?: string; cat?: string; sub?: string }> }) {
   const { q, cat, sub } = await searchParams;
@@ -38,6 +47,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
         {sub && <><span>/</span><span style={{ color: 'var(--ink)' }}>{sub}</span></>}
       </nav>
       <h1 style={{ marginBottom: 6 }}>{sub ?? cat ?? (q ? `Results for “${q}”` : 'All open lots')}</h1>
+      {(cat || sub) && !q && <p style={{ color: 'var(--body)', maxWidth: 760, marginBottom: 8 }}>{categorySeo(cat, sub).description}</p>}
       <p className="muted" style={{ marginBottom: 16 }}>{lots.length} auction lots{listings.length ? ` · ${listings.length} for direct sale` : ''}{q && (cat || sub) ? ` matching “${q}”` : ''}</p>
 
       <nav aria-label="Filter by category" className="row" style={{ gap: 8, marginBottom: subs.length ? 10 : 24 }}>

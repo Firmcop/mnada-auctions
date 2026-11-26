@@ -5,7 +5,11 @@ import ListingCard from '@/components/ListingCard';
 import type { Listing } from '@/lib/format';
 
 export const dynamic = 'force-dynamic';
-export const metadata: Metadata = { title: 'Direct sale — buy now' };
+export const metadata: Metadata = {
+  title: 'Container houses, A-frames & steel structures for sale in Kenya',
+  description: 'Buy container houses, container offices, A-frame cabins and steel warehouse kits directly — ready-built or made to order, with delivery and installation across Kenya.',
+  alternates: { canonical: '/direct-sale' },
+};
 
 export default async function DirectSalePage({ searchParams }: { searchParams: Promise<{ cat?: string }> }) {
   const { cat } = await searchParams;

@@ -1,9 +1,14 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import { SITE_URL } from '@/lib/seo';
 
 export const metadata: Metadata = {
-  title: { default: 'Mnada — online industrial auctions', template: '%s · Mnada' },
-  description: 'Bid online on machinery, vehicles, container houses and steel structures from verified sellers in Kenya.',
+  metadataBase: new URL(SITE_URL),
+  title: { default: 'Mnada — online industrial auctions & direct sale in Kenya', template: '%s | Mnada' },
+  description: 'Bid online on machinery, vehicles, container houses and steel structures from verified sellers in Kenya — or buy now from our own yard.',
+  alternates: { canonical: '/' },
+  openGraph: { type: 'website', siteName: 'Mnada', locale: 'en_KE' },
+  twitter: { card: 'summary_large_image' },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

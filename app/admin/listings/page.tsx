@@ -12,7 +12,7 @@ export default async function AdminListings() {
     <>
       <div className="row between">
         <h1 style={{ fontSize: 28 }}>Direct sale</h1>
-        <Link href="/admin/listings/new" className="btn btn-primary">Add item</Link>
+        <div className="row"><Link href="/admin/import" className="btn btn-outline">Bulk import from spreadsheet</Link><Link href="/admin/listings/new" className="btn btn-primary">Add item</Link></div>
       </div>
       <section className="panel">
         <div className="scroll-x">

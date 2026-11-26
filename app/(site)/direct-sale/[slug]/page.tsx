@@ -4,15 +4,21 @@ import type { Metadata } from 'next';
 import { getSession } from '@/lib/supabase/server';
 import Gallery from '../../lots/[id]/Gallery';
 import EnquiryForm from './EnquiryForm';
-import { CONDITION_TAGS, listingPrice, SELLER_TYPES, type Listing } from '@/lib/format';
+import { CONDITION_TAGS, listingPrice, photoUrl, SELLER_TYPES, type Listing } from '@/lib/format';
+import { jsonLd, listingSeoDescription, listingSeoTitle, SITE_URL } from '@/lib/seo';
 
 export const dynamic = 'force-dynamic';
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
   const { supabase } = await getSession();
-  const { data } = await supabase.from('auction_listings').select('title, summary').eq('slug', slug).maybeSingle();
-  return data ? { title: data.title, description: data.summary ?? undefined } : {};
+  const { data } = await supabase.from('auction_listings').select('*').eq('slug', slug).maybeSingle();
+  if (!data) return {};
+  const l = data as Listing;
+  const title = listingSeoTitle(l);
+  const description = listingSeoDescription(l);
+  const images = (l.photos ?? []).slice(0, 1).map((p) => ({ url: photoUrl(p), alt: l.title }));
+  return { title, description, alternates: { canonical: `/direct-sale/${slug}` }, openGraph: { title, description, images, url: `/direct-sale/${slug}` } };
 }
 
 export default async function ListingPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -22,8 +28,31 @@ export default async function ListingPage({ params }: { params: Promise<{ slug: 
   if (!data) notFound();
   const l = data as Listing;
 
+  const offer = l.price !== null && l.price_type !== 'on_request'
+    ? { '@type': 'Offer', url: `${SITE_URL}/direct-sale/${l.slug}`, priceCurrency: 'KES', price: Number(l.price),
+        availability: l.status === 'sold' ? 'https://schema.org/SoldOut' : l.status === 'reserved' ? 'https://schema.org/LimitedAvailability' : 'https://schema.org/InStock',
+        itemCondition: l.condition_tags.includes('new') ? 'https://schema.org/NewCondition' : 'https://schema.org/UsedCondition',
+        seller: { '@type': 'Organization', name: 'Mnada' } }
+    : undefined;
+  const ld = [
+    {
+      '@context': 'https://schema.org', '@type': 'Product', name: l.title, description: l.summary ?? l.description ?? undefined,
+      image: (l.photos ?? []).map(photoUrl), sku: l.sku ?? `DS-${l.ref_no}`, brand: l.seller_type === 'own' ? { '@type': 'Brand', name: 'Mnada' } : undefined,
+      category: [l.category, l.subcategory].filter(Boolean).join(' > '), offers: offer,
+    },
+    {
+      '@context': 'https://schema.org', '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Home', item: SITE_URL },
+        { '@type': 'ListItem', position: 2, name: 'Direct sale', item: `${SITE_URL}/direct-sale` },
+        { '@type': 'ListItem', position: 3, name: l.title },
+      ],
+    },
+  ];
+
   return (
     <div className="wrap" style={{ padding: '20px 24px 40px' }}>
+      <script type="application/ld+json" dangerouslySetInnerHTML={jsonLd(ld)} />
       <nav aria-label="Breadcrumb" className="small muted row" style={{ gap: 8 }}>
         <Link href="/" style={{ color: 'var(--muted)' }}>Home</Link><span>/</span>
         <Link href="/direct-sale" style={{ color: 'var(--muted)' }}>Direct sale</Link><span>/</span>

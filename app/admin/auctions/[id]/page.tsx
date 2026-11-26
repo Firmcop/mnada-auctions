@@ -22,6 +22,7 @@ export default async function AdminAuction({ params }: { params: Promise<{ id: s
         </div>
         <div className="row">
           {a.status !== 'draft' && <Link href={`/auctions/${a.slug}`} className="btn btn-outline">View on site</Link>}
+          <Link href="/admin/import" className="btn btn-outline">Bulk import lots</Link>
           <Link href={`/admin/lots/new?auction=${a.id}`} className="btn btn-primary">Add lot</Link>
         </div>
       </div>

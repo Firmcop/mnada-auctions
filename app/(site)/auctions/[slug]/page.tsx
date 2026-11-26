@@ -3,9 +3,22 @@ import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import Countdown from '@/components/Countdown';
 import { Photo } from '@/components/LotCard';
-import { eat, kes, type Auction, type Lot } from '@/lib/format';
+import type { Metadata } from 'next';
+import { eat, kes, photoUrl, type Auction, type Lot } from '@/lib/format';
 
 export const dynamic = 'force-dynamic';
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const supabase = await createClient();
+  const { data: a } = await supabase.from('auction_auctions').select('id, title, description, location, seo_title, seo_description').eq('slug', slug).maybeSingle();
+  if (!a) return {};
+  const { data: first } = await supabase.from('auction_lots').select('photos').eq('auction_id', a.id).order('lot_no').limit(1).maybeSingle();
+  const title = a.seo_title || `${a.title} – online auction${a.location ? `, ${a.location}` : ''}`;
+  const description = a.seo_description || (a.description ?? '').slice(0, 155);
+  const images = (first?.photos ?? []).slice(0, 1).map((p: string) => ({ url: photoUrl(p) }));
+  return { title, description, alternates: { canonical: `/auctions/${slug}` }, openGraph: { title, description, images } };
+}
 
 export default async function AuctionPage({ params, searchParams }: {
   params: Promise<{ slug: string }>;

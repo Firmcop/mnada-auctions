@@ -3,6 +3,9 @@ import { useMemo, useState } from 'react';
 import { subsOf } from '@/lib/categories';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { uploadPhoto } from '@/lib/image';
+import SeoFields from '@/components/SeoFields';
+import { lotSeoDescription, lotSeoTitle } from '@/lib/seo';
 import { eatInputToIso, isoToEatInput } from '@/lib/eat-input';
 import { CATEGORIES, CONDITION_TAGS, kes, photoUrl, SELLER_TYPES, type ExtraCost, type Lot } from '@/lib/format';
 
@@ -37,11 +40,9 @@ export default function LotForm({ auctionId, auctionTitle, lot, reserve, default
     setUploading(true);
     const added: string[] = [];
     for (const file of files) {
-      const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
-      const path = `lots/${lotId}/${Date.now()}-${Math.random().toString(36).slice(2, 7)}.${ext}`;
-      const { error } = await supabase.storage.from('auction-photos').upload(path, file, { cacheControl: '31536000' });
-      if (error) { setMsg({ ok: false, text: `Upload failed: ${error.message}` }); continue; }
-      added.push(path);
+      const r = await uploadPhoto(supabase, `lots/${lotId}`, file);
+      if (r.error || !r.path) setMsg({ ok: false, text: `Upload failed: ${r.error}` });
+      else setPhotos((p) => [...p, r.path as string]);
     }
     setPhotos((p) => [...p, ...added]);
     setUploading(false);
@@ -77,6 +78,8 @@ export default function LotForm({ auctionId, auctionTitle, lot, reserve, default
       closes_at: eatInputToIso(g('closes_at')),
       vat_on_hammer: f.get('vat_on_hammer') === 'on',
       condition_tags: tags,
+      seo_title: g('seo_title') || null,
+      seo_description: g('seo_description') || null,
       seller_type: g('seller_type') || 'own',
       extra_costs: extras.filter((x) => x.label.trim() && Number(x.amount) > 0).map((x) => ({ label: x.label.trim(), amount: Number(x.amount), mandatory: x.mandatory })),
     };
@@ -93,6 +96,21 @@ export default function LotForm({ auctionId, auctionTitle, lot, reserve, default
     if (!lot) { router.replace(`/admin/lots/${lotId}?saved=1`); return; }
     setMsg({ ok: true, text: 'Saved.' });
     router.refresh();
+  }
+
+  async function duplicate() {
+    if (!lot) return;
+    const { data: last } = await supabase.from('auction_lots').select('lot_no, closes_at').eq('auction_id', auctionId).order('lot_no', { ascending: false }).limit(1).single();
+    const newId = crypto.randomUUID();
+    const { error } = await supabase.from('auction_lots').insert({
+      id: newId, auction_id: auctionId, lot_no: (last?.lot_no ?? lot.lot_no) + 1, title: `${lot.title} (copy)`,
+      category: lot.category, subcategory: lot.subcategory, description: lot.description, specs: lot.specs, photos: lot.photos,
+      location: lot.location, start_bid: lot.start_bid, vat_on_hammer: lot.vat_on_hammer, condition_tags: lot.condition_tags,
+      seller_type: lot.seller_type, extra_costs: lot.extra_costs,
+      closes_at: new Date(new Date(last?.closes_at ?? lot.closes_at).getTime() + 60000).toISOString(),
+    });
+    if (error) { setMsg({ ok: false, text: error.message }); return; }
+    router.push(`/admin/lots/${newId}?saved=1`);
   }
 
   async function remove() {
@@ -210,6 +228,11 @@ export default function LotForm({ auctionId, auctionTitle, lot, reserve, default
           <label className="check"><input type="checkbox" name="vat_on_hammer" defaultChecked={lot?.vat_on_hammer ?? true} />VAT applies to the hammer price (seller is VAT-registered)</label>
           {hasBids && <p className="small muted">This lot has bids, so the starting bid can no longer change.</p>}
         </section>
+        <SeoFields
+          path={`/lots/${lotId}`}
+          autoTitle={lotSeoTitle({ title: title || 'Lot title', lot_no: lot?.lot_no ?? defaultLotNo })}
+          autoDescription={lotSeoDescription({ title: title || 'Lot title', description: lot?.description, location: lot?.location, closes_at: lot?.closes_at ?? defaultClose ?? new Date().toISOString() })}
+          title={lot?.seo_title} description={lot?.seo_description} />
       </div>
 
       <aside className="stack" style={{ flex: '1 1 280px', minWidth: 0, gap: 14, position: 'sticky', top: 16 }}>
@@ -225,6 +248,7 @@ export default function LotForm({ auctionId, auctionTitle, lot, reserve, default
         </div>
         {msg && <div role="status" className={`alert ${msg.ok ? 'alert-ok' : 'alert-err'}`}>{msg.text}</div>}
         <button className="btn btn-primary" type="submit" disabled={busy || uploading}>{busy ? 'Saving…' : lot ? 'Save lot' : 'Create lot'}</button>
+        {lot && <button type="button" className="btn btn-outline" onClick={duplicate}>Duplicate as next lot</button>}
         {lot && !hasBids && <button type="button" className="btn btn-outline" style={{ color: 'var(--danger)' }} onClick={remove}>Delete lot</button>}
       </aside>
     </form>

@@ -2,6 +2,9 @@
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { uploadPhoto } from '@/lib/image';
+import SeoFields from '@/components/SeoFields';
+import { listingSeoDescription, listingSeoTitle } from '@/lib/seo';
 import { slugify } from '@/lib/eat-input';
 import { subsOf } from '@/lib/categories';
 import { CATEGORIES, CONDITION_TAGS, kes, photoUrl, SELLER_TYPES, type Listing } from '@/lib/format';
@@ -11,6 +14,8 @@ export default function ListingForm({ listing }: { listing?: Listing }) {
   const supabase = useMemo(() => createClient(), []);
   const id = useMemo(() => listing?.id ?? crypto.randomUUID(), [listing]);
   const [category, setCategory] = useState(listing?.category ?? 'Container houses & modular');
+  const [title, setTitle] = useState(listing?.title ?? '');
+  const [summary, setSummary] = useState(listing?.summary ?? '');
   const [priceType, setPriceType] = useState<Listing['price_type']>(listing?.price_type ?? 'on_request');
   const [price, setPrice] = useState<number>(Number(listing?.price ?? 0));
   const [photos, setPhotos] = useState<string[]>(listing?.photos ?? []);
@@ -24,11 +29,9 @@ export default function ListingForm({ listing }: { listing?: Listing }) {
     const files = Array.from(e.target.files ?? []);
     setUploading(true);
     for (const file of files) {
-      const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
-      const path = `listings/${id}/${Date.now()}-${Math.random().toString(36).slice(2, 7)}.${ext}`;
-      const { error } = await supabase.storage.from('auction-photos').upload(path, file, { cacheControl: '31536000' });
-      if (error) setMsg({ ok: false, text: `Upload failed: ${error.message}` });
-      else setPhotos((p) => [...p, path]);
+      const r = await uploadPhoto(supabase, `listings/${id}`, file);
+      if (r.error || !r.path) setMsg({ ok: false, text: `Upload failed: ${r.error}` });
+      else setPhotos((p) => [...p, r.path as string]);
     }
     setUploading(false);
     e.target.value = '';
@@ -42,14 +45,16 @@ export default function ListingForm({ listing }: { listing?: Listing }) {
     e.preventDefault();
     const f = new FormData(e.currentTarget);
     const g = (k: string) => String(f.get(k) ?? '').trim();
-    const title = g('title');
     const row = {
       id,
       slug: listing?.slug ?? `${slugify(title)}-${Math.random().toString(36).slice(2, 6)}`,
-      title,
+      title: title.trim(),
       category,
       subcategory: g('subcategory') || null,
-      summary: g('summary') || null,
+      summary: summary.trim() || null,
+      sku: g('sku').toUpperCase() || null,
+      seo_title: g('seo_title') || null,
+      seo_description: g('seo_description') || null,
       description: g('description') || null,
       specs: specs.filter(([k, v]) => k.trim() && v.trim()),
       photos,
@@ -77,6 +82,18 @@ export default function ListingForm({ listing }: { listing?: Listing }) {
     router.refresh();
   }
 
+  async function duplicate() {
+    if (!listing) return;
+    const newId = crypto.randomUUID();
+    const { id: _old, ref_no: _r, created_at: _c, ...rest } = listing;
+    const { error } = await supabase.from('auction_listings').insert({
+      ...rest, id: newId, title: `${listing.title} (copy)`, slug: `${listing.slug.replace(/-[a-z0-9]{4}$/, '')}-${Math.random().toString(36).slice(2, 6)}`,
+      sku: null, status: 'draft', featured: false, updated_at: new Date().toISOString(),
+    });
+    if (error) { setMsg({ ok: false, text: error.message }); return; }
+    router.push(`/admin/listings/${newId}?saved=1`);
+  }
+
   async function remove() {
     if (!listing || !window.confirm('Delete this item and its enquiries? This cannot be undone.')) return;
     const { error } = await supabase.from('auction_listings').delete().eq('id', listing.id);
@@ -89,8 +106,11 @@ export default function ListingForm({ listing }: { listing?: Listing }) {
       <div className="stack" style={{ flex: '2 1 520px', minWidth: 0, gap: 18 }}>
         <section className="panel stack" style={{ gap: 14 }}>
           <h3>Details</h3>
-          <label className="field">Title<input className="input" name="title" required defaultValue={listing?.title} /></label>
-          <label className="field">One-line summary (shown on cards)<input className="input" name="summary" maxLength={160} defaultValue={listing?.summary ?? ''} /></label>
+          <div className="grid2">
+            <label className="field" style={{ gridColumn: 'span 1' }}>Title<input className="input" required value={title} onChange={(e) => setTitle(e.target.value)} /></label>
+            <label className="field">Product code (for spreadsheet updates)<input className="input" name="sku" defaultValue={listing?.sku ?? ''} placeholder="e.g. CH40-2BR" /></label>
+          </div>
+          <label className="field">One-line summary (shown on cards)<input className="input" maxLength={160} value={summary} onChange={(e) => setSummary(e.target.value)} /></label>
           <div className="grid2">
             <label className="field">Category
               <select className="input" value={category} onChange={(e) => setCategory(e.target.value)}>{CATEGORIES.map((c) => <option key={c}>{c}</option>)}</select>
@@ -147,6 +167,12 @@ export default function ListingForm({ listing }: { listing?: Listing }) {
           ))}
           <button type="button" className="btn btn-outline btn-sm" style={{ alignSelf: 'flex-start' }} onClick={() => setSpecs((s) => [...s, ['', '']])}>+ Add specification</button>
         </section>
+
+        <SeoFields
+          path={`/direct-sale/${listing?.slug ?? '…'}`}
+          autoTitle={listingSeoTitle({ title: title || 'Product title' })}
+          autoDescription={listingSeoDescription({ title: title || 'Product title', summary, price, price_type: priceType, location: listing?.location ?? 'Ruiru' })}
+          title={listing?.seo_title} description={listing?.seo_description} />
       </div>
 
       <aside className="stack" style={{ flex: '1 1 300px', minWidth: 0, gap: 14, position: 'sticky', top: 16 }}>
@@ -177,6 +203,7 @@ export default function ListingForm({ listing }: { listing?: Listing }) {
         </section>
         {msg && <div role="status" className={`alert ${msg.ok ? 'alert-ok' : 'alert-err'}`}>{msg.text}</div>}
         <button className="btn btn-primary" type="submit" disabled={busy || uploading}>{busy ? 'Saving…' : listing ? 'Save item' : 'Create item'}</button>
+        {listing && <button type="button" className="btn btn-outline" onClick={duplicate}>Duplicate as new draft</button>}
         {listing && <button type="button" className="btn btn-outline" style={{ color: 'var(--danger)' }} onClick={remove}>Delete item</button>}
       </aside>
     </form>

@@ -7,6 +7,7 @@ const ITEMS = [
   ['/admin/auctions', 'Auctions & lots'],
   ['/admin/listings', 'Direct sale'],
   ['/admin/enquiries', 'Enquiries & offers'],
+  ['/admin/import', 'Bulk import'],
   ['/admin/bidders', 'Bidders'],
   ['/admin/invoices', 'Payments & collection'],
   ['/admin/valuations', 'Valuation requests'],

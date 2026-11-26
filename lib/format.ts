@@ -62,6 +62,8 @@ export type Auction = {
   collection_text: string | null;
   premium_pct: number;
   code: number;
+  seo_title?: string | null;
+  seo_description?: string | null;
   created_at: string;
 };
 
@@ -87,6 +89,8 @@ export type Lot = {
   vat_on_hammer: boolean;
   condition_tags: string[];
   watch_count: number;
+  seo_title?: string | null;
+  seo_description?: string | null;
   seller_type: 'own' | 'commercial' | 'receiver' | 'private';
   extra_costs: ExtraCost[];
 };
@@ -139,6 +143,9 @@ export type Listing = {
   seller_type: 'own' | 'commercial' | 'receiver' | 'private';
   status: 'draft' | 'active' | 'reserved' | 'sold';
   featured: boolean;
+  sku: string | null;
+  seo_title: string | null;
+  seo_description: string | null;
   created_at: string;
 };
 
