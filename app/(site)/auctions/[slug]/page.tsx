@@ -3,7 +3,8 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 import { createClient, getWatchedIds } from '@/lib/supabase/server';
-import AuctionLots from './AuctionLots';
+import LotBrowser from '@/components/LotBrowser';
+import { CATEGORY_NAMES, CATEGORY_TREE } from '@/lib/categories';
 import Countdown from '@/components/Countdown';
 import type { Metadata } from 'next';
 import { eat, kes, photoUrl, type Auction, type Lot } from '@/lib/format';
@@ -64,7 +65,7 @@ export default async function AuctionPage({ params }: { params: Promise<{ slug: 
       </section>
 
       <Suspense>
-        <AuctionLots lots={all} watched={Array.from(watched)} signedIn={!!user} />
+        <LotBrowser lots={all} watched={Array.from(watched)} signedIn={!!user} categoryOrder={CATEGORY_NAMES} subsFor={Object.fromEntries(CATEGORY_TREE.map((c) => [c.name, c.subs]))} />
       </Suspense>
     </div>
   );

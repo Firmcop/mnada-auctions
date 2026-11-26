@@ -161,13 +161,16 @@ table.data td { padding: 12px 8px; border-bottom: 1px solid #F0F2F4; vertical-al
 .auction-search { display: flex; gap: 10px; margin-bottom: 18px; }
 .auction-search .input { flex: 1; height: 48px; }
 .auction-search .filters-toggle { display: none; }
-.auction-body { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 32px; align-items: start; }
+.auction-body { display: grid; grid-template-columns: minmax(200px, 250px) minmax(0, 1fr); gap: 32px; align-items: start; }
 .lot-filters { display: flex; flex-direction: column; gap: 22px; position: sticky; top: 16px; }
 .lot-filters fieldset { border: 0; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 4px; }
 .lot-filters legend { font-weight: 700; font-size: 16px; margin-bottom: 8px; padding: 0; }
 .filter-check { display: grid; grid-template-columns: 22px 1fr auto; align-items: center; gap: 10px; padding: 6px 0; cursor: pointer; font-size: 15px; }
 .filter-check input { width: 20px; height: 20px; accent-color: var(--accent); margin: 0; cursor: pointer; }
 .filter-check .count { color: var(--muted); font-size: 14px; }
+.filter-subs { margin: 0 0 6px 32px; display: flex; flex-direction: column; }
+.filter-subs .filter-check { font-size: 14px; padding: 4px 0; }
+.filter-subs .filter-check input { width: 17px; height: 17px; }
 .lot-filters .input { height: 44px; min-width: 0; }
 .lot-results-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding-bottom: 14px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
 .lot-row { display: grid; grid-template-columns: 148px minmax(0, 1fr) auto auto; gap: 22px; align-items: center; padding: 18px 0; border-bottom: 1px solid var(--line); }
@@ -177,7 +180,7 @@ table.data td { padding: 12px 8px; border-bottom: 1px solid #F0F2F4; vertical-al
 .lot-row-title:hover { text-decoration: underline; }
 .lot-row-price { display: flex; flex-direction: column; gap: 2px; min-width: 150px; }
 .lot-row-actions { display: flex; gap: 10px; align-items: center; }
-@media (max-width: 860px) {
+@media (max-width: 720px) {
   .auction-search .filters-toggle { display: inline-flex; }
   .auction-body { grid-template-columns: 1fr; gap: 12px; }
   .lot-filters { display: none; position: static; background: var(--surface); border-radius: 12px; padding: 16px; }

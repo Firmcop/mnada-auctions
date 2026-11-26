@@ -13,11 +13,17 @@ const SORTS: [Sort, string][] = [['closing', 'Closing time'], ['lot', 'Lot numbe
 const price = (l: Lot) => Number(l.bid_count > 0 ? l.current_bid : l.start_bid);
 const hasDelivery = (l: Lot) => (l.extra_costs ?? []).some((e) => /deliver|transport/i.test(e.label));
 
-export default function AuctionLots({ lots, watched, signedIn }: { lots: Lot[]; watched: string[]; signedIn: boolean }) {
+export type BrowserLot = Lot & { auction_auctions?: { title: string; slug: string } | null };
+
+export default function LotBrowser({ lots, watched, signedIn, categoryOrder, subsFor, showAuction = false, placeholder = 'Search in this auction…' }: {
+  lots: BrowserLot[]; watched: string[]; signedIn: boolean;
+  categoryOrder?: string[]; subsFor?: Record<string, string[]>; showAuction?: boolean; placeholder?: string;
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
   const [cats, setCats] = useState<string[]>(() => (params.get('cat') ?? '').split(',').filter(Boolean));
+  const [subs, setSubs] = useState<string[]>(() => (params.get('sub') ?? '').split(',').filter(Boolean));
   const [q, setQ] = useState(params.get('q') ?? '');
   const [min, setMin] = useState(params.get('min') ?? '');
   const [max, setMax] = useState(params.get('max') ?? '');
@@ -30,8 +36,10 @@ export default function AuctionLots({ lots, watched, signedIn }: { lots: Lot[]; 
 
   // keep the URL shareable
   useEffect(() => {
+    const t = setTimeout(() => {
     const p = new URLSearchParams();
     if (cats.length) p.set('cat', cats.join(','));
+    if (subs.length) p.set('sub', subs.join(','));
     if (q.trim()) p.set('q', q.trim());
     if (min) p.set('min', min);
     if (max) p.set('max', max);
@@ -40,8 +48,11 @@ export default function AuctionLots({ lots, watched, signedIn }: { lots: Lot[]; 
     if (delivery) p.set('delivery', '1');
     if (sort !== 'closing') p.set('sort', sort);
     const s = p.toString();
-    router.replace(s ? `${pathname}?${s}` : pathname, { scroll: false });
-  }, [cats, q, min, max, noBids, mine, delivery, sort, pathname, router]);
+    const next = s ? `${pathname}?${s}` : pathname;
+    if (next !== `${pathname}${window.location.search}`) router.replace(next, { scroll: false });
+    }, 400);
+    return () => clearTimeout(t);
+  }, [cats, subs, q, min, max, noBids, mine, delivery, sort, pathname, router]);
 
   const num = (s: string) => Number(s.replace(/[^0-9]/g, '')) || 0;
   // everything except the category filter — used for the category counts
@@ -58,9 +69,14 @@ export default function AuctionLots({ lots, watched, signedIn }: { lots: Lot[]; 
     return true;
   }), [lots, q, min, max, noBids, mine, delivery, watchSet]);
 
-  const allCats = useMemo(() => Array.from(new Set(lots.map((l) => l.category).filter(Boolean))) as string[], [lots]);
+  const allCats = useMemo(() => {
+    const present = Array.from(new Set(lots.map((l) => l.category).filter(Boolean))) as string[];
+    if (!categoryOrder) return present;
+    return [...categoryOrder.filter((c) => present.includes(c) || cats.includes(c)), ...present.filter((c) => !categoryOrder.includes(c))];
+  }, [lots, categoryOrder, cats]);
   const shown = useMemo(() => {
-    const list = cats.length ? base.filter((l) => l.category && cats.includes(l.category)) : base;
+    let list = cats.length ? base.filter((l) => l.category && cats.includes(l.category)) : base;
+    if (subs.length) list = list.filter((l) => l.subcategory && subs.includes(l.subcategory));
     const sorted = [...list];
     if (sort === 'lot') sorted.sort((a, b) => a.lot_no - b.lot_no);
     if (sort === 'closing') sorted.sort((a, b) => (a.status === 'open' ? 0 : 1) - (b.status === 'open' ? 0 : 1) || a.closes_at.localeCompare(b.closes_at) || a.lot_no - b.lot_no);
@@ -68,29 +84,47 @@ export default function AuctionLots({ lots, watched, signedIn }: { lots: Lot[]; 
     if (sort === 'price_low') sorted.sort((a, b) => price(a) - price(b));
     if (sort === 'price_high') sorted.sort((a, b) => price(b) - price(a));
     return sorted;
-  }, [base, cats, sort]);
+  }, [base, cats, subs, sort]);
 
-  const active = cats.length + (min ? 1 : 0) + (max ? 1 : 0) + (noBids ? 1 : 0) + (mine ? 1 : 0) + (delivery ? 1 : 0);
-  function clear() { setCats([]); setMin(''); setMax(''); setNoBids(false); setMine(false); setDelivery(false); setQ(''); }
-  const toggleCat = (c: string) => setCats((cs) => (cs.includes(c) ? cs.filter((x) => x !== c) : [...cs, c]));
+  const active = cats.length + subs.length + (min ? 1 : 0) + (max ? 1 : 0) + (noBids ? 1 : 0) + (mine ? 1 : 0) + (delivery ? 1 : 0);
+  function clear() { setCats([]); setSubs([]); setMin(''); setMax(''); setNoBids(false); setMine(false); setDelivery(false); setQ(''); }
+  const toggleCat = (c: string) => {
+    if (cats.includes(c)) { setCats((cs) => cs.filter((x) => x !== c)); setSubs((ss) => ss.filter((s) => !(subsFor?.[c] ?? []).includes(s))); }
+    else setCats((cs) => [...cs, c]);
+  };
+  const toggleSub = (s: string) => setSubs((ss) => (ss.includes(s) ? ss.filter((x) => x !== s) : [...ss, s]));
 
   return (
     <section className="auction-lots">
       <div className="auction-search">
-        <input className="input" type="search" placeholder="Search in this auction…" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search in this auction" />
+        <input className="input" type="search" placeholder={placeholder} value={q} onChange={(e) => setQ(e.target.value)} aria-label={placeholder.replace('…', '')} />
         <button type="button" className="btn btn-outline filters-toggle" aria-expanded={showFilters} onClick={() => setShowFilters((v) => !v)}>Filters{active ? ` (${active})` : ''}</button>
       </div>
       <div className="auction-body">
         <aside aria-label="Filters" className={`lot-filters${showFilters ? ' open' : ''}`}>
           <fieldset>
             <legend>Category</legend>
+            {allCats.length === 0 && <span className="small muted">No categories</span>}
             {allCats.map((c) => {
               const n = base.filter((l) => l.category === c).length;
+              const subList = (subsFor?.[c] ?? []).filter((s) => base.some((l) => l.category === c && l.subcategory === s) || subs.includes(s));
               return (
-                <label key={c} className="filter-check">
-                  <input type="checkbox" checked={cats.includes(c)} onChange={() => toggleCat(c)} />
-                  <span>{c}</span><span className="count">{n}</span>
-                </label>
+                <div key={c}>
+                  <label className="filter-check">
+                    <input type="checkbox" checked={cats.includes(c)} onChange={() => toggleCat(c)} />
+                    <span>{c}</span><span className="count">{n}</span>
+                  </label>
+                  {cats.includes(c) && subList.length > 0 && (
+                    <div className="filter-subs">
+                      {subList.map((s) => (
+                        <label key={s} className="filter-check">
+                          <input type="checkbox" checked={subs.includes(s)} onChange={() => toggleSub(s)} />
+                          <span>{s}</span><span className="count">{base.filter((l) => l.category === c && l.subcategory === s).length}</span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
               );
             })}
           </fieldset>
@@ -131,6 +165,7 @@ export default function AuctionLots({ lots, watched, signedIn }: { lots: Lot[]; 
                   <span className="eyebrow">Lot {l.lot_no}</span>
                   <Link href={`/lots/${l.id}`} className="lot-row-title">{l.title}</Link>
                   <span className="small muted">{[l.subcategory || l.category, ...tags].filter(Boolean).join(' · ')}</span>
+                  {showAuction && l.auction_auctions && <Link href={`/auctions/${l.auction_auctions.slug}`} className="small" style={{ color: 'var(--muted)' }}>{l.auction_auctions.title}</Link>}
                 </div>
                 <div className="lot-row-price">
                   <span className="small muted">{l.bid_count > 0 ? `${l.bid_count} bid${l.bid_count === 1 ? '' : 's'}` : 'Starting bid'}</span>
