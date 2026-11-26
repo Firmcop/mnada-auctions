@@ -40,6 +40,7 @@ export default async function ConsignPage() {
           })}
         </section>
       )}
+      <p className="small muted">Rather we photograph and list it for you? <a href="/listing-help">Request Listing Help</a>.</p>
       <ConsignForm userId={user!.id} />
     </>
   );

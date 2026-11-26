@@ -12,6 +12,7 @@ const ITEMS = [
   ['/admin/bidders', 'Bidders'],
   ['/admin/sellers', 'Sellers'],
   ['/admin/consignments', 'Items sent for auction'],
+  ['/admin/help', 'Listing Help jobs'],
   ['/admin/invoices', 'Payments & collection'],
   ['/admin/valuations', 'Valuation requests'],
 ];

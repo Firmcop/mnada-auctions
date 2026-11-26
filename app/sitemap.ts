@@ -20,6 +20,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/direct-sale`, lastModified: now, changeFrequency: 'daily', priority: 0.9 },
     { url: `${SITE_URL}/search`, lastModified: now, changeFrequency: 'daily', priority: 0.7 },
     { url: `${SITE_URL}/sell`, changeFrequency: 'monthly', priority: 0.6 },
+    { url: `${SITE_URL}/listing-help`, changeFrequency: 'monthly', priority: 0.6 },
     { url: `${SITE_URL}/help`, changeFrequency: 'monthly', priority: 0.4 },
     ...CATEGORY_TREE.flatMap((c) => [
       { url: `${SITE_URL}/search?cat=${enc(c.name)}`, changeFrequency: 'daily' as const, priority: 0.8 },

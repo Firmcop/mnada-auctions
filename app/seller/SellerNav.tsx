@@ -8,6 +8,7 @@ const ITEMS = [
   ['/seller/consign', 'Send items for auction'],
   ['/seller/enquiries', 'Enquiries & offers'],
   ['/seller/sales', 'Sales & payouts'],
+  ['/account/listing-help', 'Listing Help'],
 ];
 
 export default function SellerNav() {

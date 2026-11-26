@@ -85,6 +85,8 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
           <div className="stack" style={{ gap: 8 }}>
             <span style={{ color: '#fff', fontWeight: 600 }}>Selling</span>
             <Link href="/sell">Request a valuation</Link>
+            <Link href="/listing-help">Listing Help</Link>
+            <Link href="/account/seller">Seller account</Link>
           </div>
           <div className="stack" style={{ gap: 8 }}>
             <span style={{ color: '#fff', fontWeight: 600 }}>Help &amp; legal</span>
