@@ -1,5 +1,5 @@
 import { getSession } from '@/lib/supabase/server';
-import { usd, type StorageSettings, type StorageSize } from '@/lib/storage';
+import { minVolume, usd, type StorageSettings, type StorageSize } from '@/lib/storage';
 import StorageCalculator from './StorageCalculator';
 
 export const dynamic = 'force-dynamic';
@@ -11,7 +11,7 @@ export const metadata = {
 export default async function StoragePage() {
   const { supabase, user, profile } = await getSession();
   const [{ data: settings }, { data: sizes }] = await Promise.all([
-    supabase.from('auction_storage_settings').select('enabled, rate_per_m3_usd, min_monthly_usd, handling_fee_usd, usd_to_kes, vat').eq('id', 1).single(),
+    supabase.from('auction_storage_settings').select('enabled, rate_per_m3_usd, min_monthly_usd, handling_fee_usd, usd_to_kes, vat, discount_tiers').eq('id', 1).single(),
     supabase.from('auction_storage_sizes').select('*').eq('active', true).order('sort'),
   ]);
   const s = settings as StorageSettings;
@@ -22,7 +22,8 @@ export default async function StoragePage() {
           <span className="eyebrow" style={{ color: '#F5A27A' }}>Storage &amp; viewing</span>
           <h1 style={{ color: '#fff', maxWidth: 820, fontSize: 'clamp(30px, 4.4vw, 48px)' }}>Keep your items at our yard — buyers view them here.</h1>
           <p style={{ color: '#C9D5DF', fontSize: 18, maxWidth: 680 }}>Secure storage for machinery, vehicles, containers and equipment while they&apos;re on sale. Buyers inspect by appointment, and collection is handled on site.</p>
-          <span style={{ color: '#fff', fontWeight: 700 }}>From USD {usd(s?.min_monthly_usd ?? 60)} per month{s?.rate_per_m3_usd != null ? ` · USD ${usd(s.rate_per_m3_usd)} per m³` : ''}{s?.vat ? ' + VAT' : ''}</span>
+          <span style={{ color: '#fff', fontWeight: 700 }}>{s?.rate_per_m3_usd != null ? `USD ${usd(s.rate_per_m3_usd)} per m³ per month · minimum ${minVolume(s)} m³ (USD ${usd(s.min_monthly_usd)})` : `From USD ${usd(s?.min_monthly_usd ?? 60)} per month`}{s?.vat ? ' + VAT' : ''}</span>
+          {(s?.discount_tiers ?? []).length > 0 && <span style={{ color: '#C9D5DF' }}>Volume discounts: {[...s.discount_tiers].sort((a, b) => a.from_m3 - b.from_m3).map((t) => `${t.pct}% off from ${t.from_m3} m³`).join(' · ')}</span>}
         </div>
       </section>
       <div className="wrap section stack" style={{ gap: 32 }}>

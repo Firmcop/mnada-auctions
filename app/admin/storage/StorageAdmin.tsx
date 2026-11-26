@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { kes } from '@/lib/format';
-import { STORAGE_STATUS, itemVolume, monthlyFor, usd, type StorageBooking, type StorageCharge, type StorageSettings, type StorageSize } from '@/lib/storage';
+import { STORAGE_STATUS, discountFor, itemVolume, minVolume, monthlyFor, usd, type DiscountTier, type StorageBooking, type StorageCharge, type StorageSettings, type StorageSize } from '@/lib/storage';
 
 type Person = { id: string; full_name: string; business_name: string | null; phone: string };
 type Stock = { id: string; ref: string; title: string; status: string; storage_booking_id: string | null };
@@ -17,6 +17,7 @@ export default function StorageAdmin({ settings, sizes, bookings, charges, peopl
   const [open, setOpen] = useState<string | null>(null);
   const [filter, setFilter] = useState<'open' | 'all' | StorageBooking['status']>('open');
   const [refs, setRefs] = useState<Record<string, string>>({});
+  const [tiers, setTiers] = useState<DiscountTier[]>(settings.discount_tiers ?? []);
   const who = (id: string) => { const p = people.find((x) => x.id === id); return p ? `${p.business_name || p.full_name} · ${p.phone}` : '—'; };
   const num = (v: FormDataEntryValue | null) => { const s = String(v ?? '').replace(/[^0-9.]/g, ''); return s === '' ? null : Number(s); };
   async function run(p: PromiseLike<{ error: { message: string } | null; data?: unknown }>, ok: string) {
@@ -45,7 +46,26 @@ export default function StorageAdmin({ settings, sizes, bookings, charges, peopl
           </fieldset>
         </form>
         {!canFinance && <p className="small muted">Pricing is set by Finance or an owner.</p>}
-        <p className="small muted">Monthly price = space in m³ × price per m³, never less than the minimum. Update the exchange rate before each month&apos;s billing.</p>
+        <p className="small muted">Monthly price = space in m³ × price per m³, less any volume discount, never less than the minimum{minVolume(settings) ? ` (= ${minVolume(settings)} m³)` : ''}. Update the exchange rate before each month&apos;s billing.</p>
+        <h4 style={{ marginTop: 14 }}>Volume discounts</h4>
+        <p className="small muted">The highest tier a booking&apos;s total space reaches applies to the whole booking.</p>
+        <fieldset disabled={!canFinance} className="stack" style={{ gap: 6, border: 0, padding: 0, margin: 0 }}>
+          {tiers.map((t, i) => (
+            <div key={i} className="row" style={{ gap: 8, alignItems: 'center' }}>
+              <span className="small">From</span>
+              <input className="input" style={{ width: 90 }} inputMode="decimal" aria-label="From m³" value={t.from_m3 || ''} onChange={(e) => setTiers((x) => x.map((y, j) => (j === i ? { ...y, from_m3: parseFloat(e.target.value) || 0 } : y)))} />
+              <span className="small">m³ →</span>
+              <input className="input" style={{ width: 80 }} inputMode="decimal" aria-label="Discount %" value={t.pct || ''} onChange={(e) => setTiers((x) => x.map((y, j) => (j === i ? { ...y, pct: parseFloat(e.target.value) || 0 } : y)))} />
+              <span className="small">% off</span>
+              {settings.rate_per_m3_usd != null && t.from_m3 > 0 && <span className="small muted">= USD {usd(Number(settings.rate_per_m3_usd) * (1 - t.pct / 100))}/m³</span>}
+              <button type="button" className="btn btn-outline btn-sm" onClick={() => setTiers((x) => x.filter((_, j) => j !== i))}>✕</button>
+            </div>
+          ))}
+          <div className="row">
+            <button type="button" className="btn btn-outline btn-sm" onClick={() => setTiers((x) => [...x, { from_m3: 0, pct: 0 }])}>+ Add tier</button>
+            <button type="button" className="btn btn-primary btn-sm" onClick={() => run(supabase.from('auction_storage_settings').update({ discount_tiers: tiers.filter((t) => t.from_m3 > 0 && t.pct > 0 && t.pct < 100).sort((a, b) => a.from_m3 - b.from_m3), updated_at: new Date().toISOString() }).eq('id', 1), 'Discounts saved.')}>Save discounts</button>
+          </div>
+        </fieldset>
         <h4 style={{ marginTop: 14 }}>Size presets in the calculator</h4>
         {sizes.map((s) => (
           <form key={s.id} className="row" style={{ gap: 8, alignItems: 'flex-end', padding: '6px 0' }} onSubmit={(e) => { e.preventDefault(); const f = new FormData(e.currentTarget); run(supabase.from('auction_storage_sizes').update({ name: String(f.get('name')), length_m: num(f.get('l')), width_m: num(f.get('w')), height_m: num(f.get('h')), active: f.get('active') === 'on' }).eq('id', s.id), 'Size saved.'); }}>
@@ -100,7 +120,8 @@ export default function StorageAdmin({ settings, sizes, bookings, charges, peopl
           const [label, cls] = STORAGE_STATUS[b.status];
           const bc = charges.filter((c) => c.booking_id === b.id);
           const items = stock.filter((s) => s.storage_booking_id === b.id);
-          const suggested = b.monthly_usd ?? b.est_monthly_usd ?? monthlyFor(Number(b.volume_m3), settings) ?? settings.min_monthly_usd;
+          const suggested = b.monthly_usd ?? monthlyFor(Number(b.volume_m3), settings) ?? b.est_monthly_usd ?? settings.min_monthly_usd;
+          const disc = discountFor(Number(b.volume_m3), settings);
           return (
             <div key={b.id} className="card stack" style={{ padding: 14, gap: 8 }}>
               <div className="row between" style={{ cursor: 'pointer' }} onClick={() => setOpen(open === b.id ? null : b.id)}>
@@ -114,7 +135,7 @@ export default function StorageAdmin({ settings, sizes, bookings, charges, peopl
                   {b.notes && <span className="small">{b.notes}</span>}
                   {canOps && ['requested', 'quoted'].includes(b.status) && (
                     <form className="row" style={{ gap: 8, alignItems: 'flex-end' }} onSubmit={(e) => { e.preventDefault(); const f = new FormData(e.currentTarget); run(supabase.rpc('auction_storage_send_quote', { p_booking: b.id, p_monthly_usd: num(f.get('monthly')), p_handling_usd: num(f.get('handling')) ?? 0, p_note: String(f.get('note') ?? '') }), 'Quote sent — the customer gets an alert.'); }}>
-                      <label className="field" style={{ width: 160 }}>Monthly (USD)<input className="input" name="monthly" defaultValue={suggested ?? ''} required /></label>
+                      <label className="field" style={{ width: 160 }}>Monthly (USD){disc > 0 ? ` · ${disc}% off incl.` : ''}<input className="input" name="monthly" defaultValue={suggested ?? ''} required /></label>
                       <label className="field" style={{ width: 160 }}>Handling (USD, once)<input className="input" name="handling" defaultValue={b.handling_usd || settings.handling_fee_usd || ''} /></label>
                       <label className="field" style={{ flex: '1 1 220px' }}>Note to customer<input className="input" name="note" defaultValue={b.admin_note ?? ''} placeholder="e.g. covered bay, delivery Tue 9am" /></label>
                       <button className="btn btn-primary btn-sm" type="submit">{b.status === 'quoted' ? 'Re-send quote' : 'Send quote'}</button>

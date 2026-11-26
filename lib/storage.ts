@@ -1,4 +1,5 @@
-export type StorageSettings = { enabled: boolean; rate_per_m3_usd: number | null; min_monthly_usd: number; handling_fee_usd: number | null; usd_to_kes: number | null; vat: boolean };
+export type DiscountTier = { from_m3: number; pct: number };
+export type StorageSettings = { enabled: boolean; rate_per_m3_usd: number | null; min_monthly_usd: number; handling_fee_usd: number | null; usd_to_kes: number | null; vat: boolean; discount_tiers: DiscountTier[] };
 export type StorageSize = { id: string; name: string; length_m: number; width_m: number; height_m: number; volume_m3: number; sort: number; active: boolean };
 export type StorageItem = { label: string; qty: number; l: number; w: number; h: number; size_id?: string | null };
 export type StorageBooking = {
@@ -17,7 +18,15 @@ export const STORAGE_STATUS: Record<StorageBooking['status'], [string, string]> 
 };
 export const usd = (n: number | null | undefined) => (n == null ? '—' : Number(n).toLocaleString('en-US', { minimumFractionDigits: Number(n) % 1 ? 2 : 0, maximumFractionDigits: 2 }));
 export function itemVolume(i: StorageItem) { return Math.max(0, Number(i.qty) || 0) * (Number(i.l) || 0) * (Number(i.w) || 0) * (Number(i.h) || 0); }
+export function discountFor(volume: number, s: StorageSettings) {
+  return (s.discount_tiers ?? []).filter((t) => Number(t.from_m3) <= volume).reduce((m, t) => Math.max(m, Number(t.pct)), 0);
+}
 export function monthlyFor(volume: number, s: StorageSettings) {
   if (s.rate_per_m3_usd == null) return null;
-  return Math.max(Number(s.min_monthly_usd), Math.round(volume * Number(s.rate_per_m3_usd) * 100) / 100);
+  const pct = discountFor(volume, s);
+  return Math.max(Number(s.min_monthly_usd), Math.round(volume * Number(s.rate_per_m3_usd) * (1 - pct / 100) * 100) / 100);
+}
+/** Smallest space billed (minimum charge ÷ price per m³). */
+export function minVolume(s: StorageSettings) {
+  return s.rate_per_m3_usd ? Math.round((Number(s.min_monthly_usd) / Number(s.rate_per_m3_usd)) * 10) / 10 : null;
 }

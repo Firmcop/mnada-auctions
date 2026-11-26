@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { kes } from '@/lib/format';
-import { itemVolume, monthlyFor, usd, type StorageItem, type StorageSettings, type StorageSize } from '@/lib/storage';
+import { discountFor, itemVolume, minVolume, monthlyFor, usd, type StorageItem, type StorageSettings, type StorageSize } from '@/lib/storage';
 
 type Row = StorageItem & { key: number };
 let k = 1;
@@ -18,6 +18,9 @@ export default function StorageCalculator({ settings, sizes, userId, defaultPhon
 
   const volume = Math.round(rows.reduce((s, r) => s + itemVolume(r), 0) * 100) / 100;
   const monthly = monthlyFor(volume, settings);
+  const pct = discountFor(volume, settings);
+  const minVol = minVolume(settings);
+  const base = settings.rate_per_m3_usd != null ? Math.round(volume * Number(settings.rate_per_m3_usd) * 100) / 100 : null;
   const fx = settings.usd_to_kes ? Number(settings.usd_to_kes) : null;
   const vatF = settings.vat ? 1.16 : 1;
 
@@ -75,7 +78,10 @@ export default function StorageCalculator({ settings, sizes, userId, defaultPhon
         <div className="row between"><span>Space needed</span><b>{volume.toLocaleString('en-US')} m³</b></div>
         {monthly != null ? (
           <>
-            <div className="row between"><span>Monthly storage{monthly === Number(settings.min_monthly_usd) && volume * Number(settings.rate_per_m3_usd) < monthly ? ' (minimum)' : ''}</span><b style={{ fontSize: 20 }}>USD {usd(monthly)}</b></div>
+            {base != null && <div className="row between small"><span>{volume.toLocaleString('en-US')} m³ × USD {usd(settings.rate_per_m3_usd)}</span><span>USD {usd(base)}</span></div>}
+            {pct > 0 && base != null && <div className="row between small" style={{ color: 'var(--green)', fontWeight: 600 }}><span>Volume discount {pct}%</span><span>− USD {usd(Math.round(base * pct) / 100)}</span></div>}
+            {minVol != null && volume < minVol && <div className="row between small muted"><span>Minimum storage is {minVol} m³</span><span>USD {usd(settings.min_monthly_usd)}</span></div>}
+            <div className="row between"><span>Monthly storage</span><b style={{ fontSize: 20 }}>USD {usd(monthly)}</b></div>
             {fx && <div className="row between small muted"><span>≈ in KES{settings.vat ? ' incl. VAT' : ''}</span><span>KES {kes(monthly * fx * vatF)} / month</span></div>}
             <div className="row between small" style={{ alignItems: 'center' }}>
               <label className="row" style={{ gap: 8, alignItems: 'center' }}>For <input className="input" type="number" min={1} max={60} value={months || ''} onChange={(e) => setMonths(parseInt(e.target.value, 10) || 0)} style={{ width: 70, height: 36 }} aria-label="Months" /> month(s)</label>
