@@ -1,5 +1,6 @@
 'use client';
 import { useMemo, useState } from 'react';
+import { subsOf } from '@/lib/categories';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { eatInputToIso, isoToEatInput } from '@/lib/eat-input';
@@ -22,6 +23,7 @@ export default function LotForm({ auctionId, auctionTitle, lot, reserve, default
   const [startBid, setStartBid] = useState<number>(Number(lot?.start_bid ?? 0));
   const [photos, setPhotos] = useState<string[]>(lot?.photos ?? []);
   const [specs, setSpecs] = useState<[string, string][]>(lot?.specs?.length ? lot.specs : [['Make / model', ''], ['Year', '']]);
+  const [category, setCategory] = useState<string>(lot?.category ?? CATEGORIES[0]);
   const [tags, setTags] = useState<string[]>(lot?.condition_tags ?? []);
   const [extras, setExtras] = useState<ExtraCost[]>(lot?.extra_costs ?? []);
   const [uploading, setUploading] = useState(false);
@@ -66,6 +68,7 @@ export default function LotForm({ auctionId, auctionTitle, lot, reserve, default
       lot_no: Number(g('lot_no')),
       title,
       category: g('category') || null,
+      subcategory: g('subcategory') || null,
       description: g('description') || null,
       location: g('location') || null,
       specs: specs.filter(([k, v]) => k.trim() && v.trim()),
@@ -117,7 +120,13 @@ export default function LotForm({ auctionId, auctionTitle, lot, reserve, default
           <div className="grid2">
             <label className="field">Lot number<input className="input" name="lot_no" type="number" min="1" required defaultValue={lot?.lot_no ?? defaultLotNo} /></label>
             <label className="field">Category
-              <select className="input" name="category" defaultValue={lot?.category ?? CATEGORIES[0]}>{CATEGORIES.map((c) => <option key={c}>{c}</option>)}</select>
+              <select className="input" name="category" value={category} onChange={(e) => setCategory(e.target.value)}>{CATEGORIES.map((c) => <option key={c}>{c}</option>)}</select>
+            </label>
+            <label className="field">Type
+              <select className="input" name="subcategory" key={category} defaultValue={lot?.category === category ? lot?.subcategory ?? '' : ''}>
+                <option value="">—</option>
+                {subsOf(category).map((s) => <option key={s}>{s}</option>)}
+              </select>
             </label>
             <label className="field">Location<input className="input" name="location" defaultValue={lot?.location ?? ''} /></label>
           </div>

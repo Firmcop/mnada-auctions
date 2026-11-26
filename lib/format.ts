@@ -71,6 +71,7 @@ export type Lot = {
   lot_no: number;
   title: string;
   category: string | null;
+  subcategory: string | null;
   description: string | null;
   specs: [string, string][];
   photos: string[];
@@ -116,16 +117,33 @@ export function mandatoryExtras(lot: { extra_costs?: ExtraCost[] }) {
   return (lot.extra_costs ?? []).filter((e) => e.mandatory).reduce((s, e) => s + Number(e.amount || 0), 0);
 }
 
-export const CATEGORIES = [
-  'Construction & earthmoving',
-  'Metalworking',
-  'Welding',
-  'Lifting & handling',
-  'Trucks & transport',
-  'Container houses & modular',
-  'Steel structures',
-  'Agriculture',
-  'Woodworking',
-  'Food processing',
-  'Other',
-];
+export { CATEGORY_NAMES as CATEGORIES } from './categories';
+
+export type Listing = {
+  id: string;
+  ref_no: number;
+  slug: string;
+  title: string;
+  category: string;
+  subcategory: string | null;
+  summary: string | null;
+  description: string | null;
+  specs: [string, string][];
+  photos: string[];
+  location: string | null;
+  price: number | null;
+  price_type: 'fixed' | 'offer' | 'on_request';
+  stock: number;
+  lead_time: string | null;
+  condition_tags: string[];
+  seller_type: 'own' | 'commercial' | 'receiver' | 'private';
+  status: 'draft' | 'active' | 'reserved' | 'sold';
+  featured: boolean;
+  created_at: string;
+};
+
+export function listingPrice(l: Pick<Listing, 'price' | 'price_type'>) {
+  if (l.price_type === 'on_request' || l.price === null) return 'Price on request';
+  if (l.price_type === 'offer') return `KES ${kes(l.price)} · or make an offer`;
+  return `KES ${kes(l.price)}`;
+}

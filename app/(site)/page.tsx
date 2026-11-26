@@ -2,7 +2,9 @@ import Link from 'next/link';
 import { getSession, getWatchedIds } from '@/lib/supabase/server';
 import LotCard from '@/components/LotCard';
 import Countdown from '@/components/Countdown';
-import { CATEGORIES, eat, type Auction, type Lot } from '@/lib/format';
+import { eat, type Auction, type Listing, type Lot } from '@/lib/format';
+import { CATEGORY_TREE, searchHref } from '@/lib/categories';
+import ListingCard from '@/components/ListingCard';
 import { CheckIcon } from '@/components/Icons';
 
 export const dynamic = 'force-dynamic';
@@ -15,6 +17,8 @@ export default async function Home() {
     supabase.from('auction_lots').select('*, auction_auctions!inner(status)').eq('status', 'open')
       .eq('auction_auctions.status', 'live').gt('closes_at', new Date().toISOString()).order('closes_at').limit(8),
   ]);
+  const { data: listingData } = await supabase.from('auction_listings').select('*').eq('status', 'active').order('featured', { ascending: false }).order('created_at', { ascending: false }).limit(4);
+  const listings = (listingData ?? []) as Listing[];
   const live = (auctions ?? []) as Auction[];
   const featured = live[0];
   const { data: counts } = await supabase.from('auction_lots').select('auction_id').in('auction_id', live.map((a) => a.id));
@@ -66,6 +70,19 @@ export default async function Home() {
         )}
       </section>
 
+      {listings.length > 0 && (
+        <section className="wrap section" style={{ paddingTop: 8 }}>
+          <div className="row between" style={{ marginBottom: 22 }}>
+            <div className="stack" style={{ gap: 4 }}>
+              <h2>Buy now — direct sale</h2>
+              <span className="muted">Container houses, A-frames and steel structures from our own yard. Quote or offer, no auction.</span>
+            </div>
+            <Link href="/direct-sale" style={{ fontWeight: 600 }}>View all</Link>
+          </div>
+          <div className="lot-grid">{listings.map((l) => <ListingCard key={l.id} listing={l} />)}</div>
+        </section>
+      )}
+
       <section id="auctions" className="wrap section" style={{ paddingTop: 8 }}>
         <h2 style={{ marginBottom: 16 }}>Live auctions</h2>
         <div style={{ borderTop: '1px solid var(--line)' }}>
@@ -86,8 +103,8 @@ export default async function Home() {
       <section className="wrap section" style={{ paddingTop: 8 }}>
         <h2 style={{ marginBottom: 18 }}>Browse by category</h2>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 14 }}>
-          {CATEGORIES.filter((c) => c !== 'Other').map((c) => (
-            <Link key={c} href={`/search?cat=${encodeURIComponent(c)}`} style={{ background: 'var(--surface)', borderRadius: 12, padding: 20, textDecoration: 'none', fontWeight: 600, minHeight: 84 }}>{c}</Link>
+          {CATEGORY_TREE.map((c) => (
+            <Link key={c.name} href={searchHref(c.name)} style={{ background: 'var(--surface)', borderRadius: 12, padding: 20, textDecoration: 'none', fontWeight: 600, minHeight: 84 }}>{c.name}<span className="small muted" style={{ display: 'block', fontWeight: 400, marginTop: 6 }}>{c.subs.slice(0, 3).join(' · ')}</span></Link>
           ))}
         </div>
       </section>

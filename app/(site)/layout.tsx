@@ -2,24 +2,29 @@ import Link from 'next/link';
 import { getSession } from '@/lib/supabase/server';
 import { GavelIcon } from '@/components/Icons';
 import SearchBox from '@/components/SearchBox';
+import MegaMenu, { type FeaturedItem } from '@/components/MegaMenu';
+import { kes, listingPrice, type Listing, type Lot } from '@/lib/format';
 
-const NAV_CATEGORIES = [
-  'Construction & earthmoving',
-  'Metalworking',
-  'Lifting & handling',
-  'Trucks & transport',
-  'Container houses & modular',
-  'Steel structures',
-  'Agriculture',
-  'Woodworking',
-  'Food processing',
-];
 
 export default async function SiteLayout({ children }: { children: React.ReactNode }) {
   const { supabase, user, profile } = await getSession();
   const { count: unread } = user
     ? await supabase.from('auction_notifications').select('id', { count: 'exact', head: true }).eq('user_id', user.id).is('read_at', null)
     : { count: 0 };
+  const [{ data: fLots }, { data: fListings }] = await Promise.all([
+    supabase.from('auction_lots').select('id, title, category, photos, bid_count, current_bid, start_bid, auction_auctions!inner(status)')
+      .eq('status', 'open').eq('auction_auctions.status', 'live').gt('closes_at', new Date().toISOString()).order('closes_at').limit(40),
+    supabase.from('auction_listings').select('slug, title, category, photos, price, price_type').eq('status', 'active').order('featured', { ascending: false }).order('created_at', { ascending: false }).limit(40),
+  ]);
+  const featured: FeaturedItem[] = [
+    ...((fListings ?? []) as Pick<Listing, 'slug' | 'title' | 'category' | 'photos' | 'price' | 'price_type'>[]).map((l) => ({
+      href: `/direct-sale/${l.slug}`, title: l.title, category: l.category, photo: l.photos?.[0], price: listingPrice(l), badge: 'Direct sale',
+    })),
+    ...((fLots ?? []) as unknown as Lot[]).map((l) => ({
+      href: `/lots/${l.id}`, title: l.title, category: l.category ?? '', photo: l.photos?.[0],
+      price: `KES ${kes(l.bid_count > 0 ? l.current_bid : l.start_bid)}`, badge: l.bid_count > 0 ? 'Auction · current bid' : 'Auction · starting bid',
+    })),
+  ];
   return (
     <>
       <div className="topbar">
@@ -61,14 +66,7 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
             )}
           </nav>
         </div>
-        <nav aria-label="Categories" className="catnav">
-          <div className="wrap">
-            {NAV_CATEGORIES.map((c) => (
-              <Link key={c} href={`/search?cat=${encodeURIComponent(c)}`}>{c}</Link>
-            ))}
-            <Link href="/search">All categories</Link>
-          </div>
-        </nav>
+        <MegaMenu featured={featured} />
       </header>
       <main>{children}</main>
       <footer className="footer">

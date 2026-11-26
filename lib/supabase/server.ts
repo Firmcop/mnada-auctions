@@ -36,6 +36,7 @@ export type Profile = {
   is_admin: boolean;
   bidder_no: number;
   doc_path: string | null;
+  email: string | null;
   created_at: string;
 };
 

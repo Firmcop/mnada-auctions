@@ -14,6 +14,7 @@ export default async function AdminHome() {
     supabase.from('auction_valuations').select('id', { count: 'exact', head: true }).gte('created_at', new Date(Date.now() - 7 * 86400000).toISOString()),
     supabase.from('auction_bids').select('amount, created_at, is_auto, auction_lots(lot_no, title)').order('created_at', { ascending: false }).limit(8),
   ]);
+  const { count: newEnquiries } = await supabase.from('auction_enquiries').select('id', { count: 'exact', head: true }).eq('status', 'new');
   const lots = openLots.data ?? [];
   const owed = (unpaid.data ?? []).reduce((s, i) => s + Number(i.total) - Number(i.paid), 0);
 
@@ -31,6 +32,7 @@ export default async function AdminHome() {
         <div className="kpi"><span className="eyebrow">Bids, last 24 h</span><b>{bidsToday.count ?? 0}</b></div>
         <Link href="/admin/bidders" className="kpi" style={{ textDecoration: 'none' }}><span className="eyebrow">Bidders to approve</span><b style={{ color: (pending.count ?? 0) > 0 ? 'var(--accent-text)' : undefined }}>{pending.count ?? 0}</b></Link>
         <Link href="/admin/invoices" className="kpi" style={{ textDecoration: 'none' }}><span className="eyebrow">Outstanding</span><b>KES {kes(owed)}</b><span className="small muted">{(unpaid.data ?? []).length} invoices</span></Link>
+        <Link href="/admin/enquiries" className="kpi" style={{ textDecoration: 'none' }}><span className="eyebrow">New enquiries &amp; offers</span><b style={{ color: (newEnquiries ?? 0) > 0 ? 'var(--accent-text)' : undefined }}>{newEnquiries ?? 0}</b></Link>
         <Link href="/admin/valuations" className="kpi" style={{ textDecoration: 'none' }}><span className="eyebrow">Valuation requests (7 days)</span><b>{vals.count ?? 0}</b></Link>
       </div>
       <div className="row" style={{ gap: 20, alignItems: 'flex-start' }}>

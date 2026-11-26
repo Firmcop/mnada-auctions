@@ -87,11 +87,31 @@ textarea.input { height: auto; padding: 12px 14px; resize: vertical; }
 .nav a.plain { text-decoration: none; font-weight: 500; padding: 10px 4px; }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
-/* Category menu */
-.catnav .wrap { display: flex; gap: 4px 22px; overflow-x: auto; white-space: nowrap; padding-top: 0; padding-bottom: 4px; scrollbar-width: none; }
-.catnav .wrap::-webkit-scrollbar { display: none; }
-.catnav a { text-decoration: none; font-size: 14px; font-weight: 500; padding: 10px 0; color: var(--navy); }
-.catnav a:hover { color: var(--accent-text); }
+/* Mega menu */
+.mega { position: relative; background: var(--surface); border-top: 1px solid var(--line); }
+.mega-bar { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.mega-tabs { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; }
+.mega-tabs::-webkit-scrollbar { display: none; }
+.mega-tab { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; height: 46px; padding: 0 14px; border: 0; background: transparent; font: inherit; font-size: 14px; font-weight: 600; color: var(--navy); cursor: pointer; text-decoration: none; border-bottom: 3px solid transparent; }
+.mega-tab:hover, .mega-tab.on { color: var(--navy); background: #fff; border-bottom-color: var(--accent); }
+.mega-direct { color: var(--accent-text); }
+.mega-right { display: flex; gap: 20px; white-space: nowrap; }
+.mega-right a { text-decoration: none; font-size: 14px; font-weight: 600; }
+.mega-panel { position: absolute; left: 0; right: 0; top: 100%; background: #fff; border-bottom: 1px solid var(--line); box-shadow: 0 18px 40px rgba(15,42,61,.16); z-index: 30; }
+.mega-inner { display: flex; flex-wrap: wrap; gap: 28px; padding-top: 26px; padding-bottom: 18px; }
+.mega-cols { flex: 999 1 560px; display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 18px 28px; }
+.mega-col { display: flex; flex-direction: column; gap: 2px; }
+.mega-head { font-family: var(--font-head); font-weight: 700; font-size: 16px; color: var(--navy); text-decoration: none; margin-bottom: 8px; }
+.mega-sub { color: var(--body); text-decoration: none; font-size: 14px; padding: 6px 0; }
+.mega-sub:hover, .mega-head:hover { color: var(--accent-text); }
+.mega-picks { flex: 1 1 280px; display: flex; flex-direction: column; gap: 10px; border-left: 1px solid var(--line); padding-left: 28px; }
+.mega-pick { display: flex; gap: 12px; align-items: center; padding: 10px; border: 1px solid var(--line); border-radius: 10px; text-decoration: none; color: inherit; }
+.mega-pick:hover { border-color: var(--navy); }
+@media (max-width: 860px) {
+  .mega-right { display: none; }
+  .mega-picks { border-left: 0; padding-left: 0; }
+  .mega-panel { max-height: 75vh; overflow-y: auto; }
+}
 
 /* Lot cards */
 .lot-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 22px; }

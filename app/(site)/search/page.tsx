@@ -1,37 +1,72 @@
+import Link from 'next/link';
 import { getSession, getWatchedIds } from '@/lib/supabase/server';
 import LotCard from '@/components/LotCard';
-import Link from 'next/link';
-import { CATEGORIES, type Lot } from '@/lib/format';
+import ListingCard from '@/components/ListingCard';
+import { CATEGORY_TREE, searchHref, subsOf } from '@/lib/categories';
+import type { Listing, Lot } from '@/lib/format';
 
 export const dynamic = 'force-dynamic';
 
-export default async function SearchPage({ searchParams }: { searchParams: Promise<{ q?: string; cat?: string }> }) {
-  const { q, cat } = await searchParams;
+export default async function SearchPage({ searchParams }: { searchParams: Promise<{ q?: string; cat?: string; sub?: string }> }) {
+  const { q, cat, sub } = await searchParams;
   const { supabase, user } = await getSession();
   const watched = await getWatchedIds(supabase, user?.id);
-  let query = supabase.from('auction_lots').select('*, auction_auctions!inner(status)')
+  const term = (q ?? '').replace(/[%,()]/g, ' ').trim();
+
+  let lotQuery = supabase.from('auction_lots').select('*, auction_auctions!inner(status)')
     .eq('auction_auctions.status', 'live').eq('status', 'open').order('closes_at').limit(60);
-  if (cat) query = query.eq('category', cat);
-  if (q) {
-    const term = q.replace(/[%,()]/g, ' ').trim();
-    if (term) query = query.or(`title.ilike.%${term}%,description.ilike.%${term}%,category.ilike.%${term}%`);
+  let listQuery = supabase.from('auction_listings').select('*').in('status', ['active', 'reserved']).order('featured', { ascending: false }).limit(30);
+  if (cat) { lotQuery = lotQuery.eq('category', cat); listQuery = listQuery.eq('category', cat); }
+  if (sub) { lotQuery = lotQuery.eq('subcategory', sub); listQuery = listQuery.eq('subcategory', sub); }
+  if (term) {
+    const or = `title.ilike.%${term}%,description.ilike.%${term}%,category.ilike.%${term}%,subcategory.ilike.%${term}%`;
+    lotQuery = lotQuery.or(or);
+    listQuery = listQuery.or(or);
   }
-  const { data } = await query;
-  const lots = (data ?? []) as Lot[];
+  const [{ data: lotData }, { data: listData }] = await Promise.all([lotQuery, listQuery]);
+  const lots = (lotData ?? []) as Lot[];
+  const listings = (listData ?? []) as Listing[];
+  const subs = subsOf(cat);
+  const withQ = (href: string) => (q ? `${href}${href.includes('?') ? '&' : '?'}q=${encodeURIComponent(q)}` : href);
+
   return (
     <div className="wrap section">
-      <h1 style={{ marginBottom: 6 }}>{cat ? cat : q ? `Results for “${q}”` : 'All open lots'}</h1>
-      <p className="muted" style={{ marginBottom: 16 }}>{lots.length} open lots</p>
-      <nav aria-label="Filter by category" className="row" style={{ gap: 8, marginBottom: 24 }}>
-        <Link href={q ? `/search?q=${encodeURIComponent(q)}` : '/search'} className={`btn btn-sm ${!cat ? 'btn-dark' : 'btn-outline'}`}>All</Link>
-        {CATEGORIES.filter((c) => c !== 'Other').map((c) => (
-          <Link key={c} href={`/search?cat=${encodeURIComponent(c)}${q ? `&q=${encodeURIComponent(q)}` : ''}`} className={`btn btn-sm ${cat === c ? 'btn-dark' : 'btn-outline'}`}>{c}</Link>
+      <nav aria-label="Breadcrumb" className="small muted row" style={{ gap: 8, marginBottom: 10 }}>
+        <Link href="/" style={{ color: 'var(--muted)' }}>Home</Link><span>/</span>
+        <Link href="/search" style={{ color: 'var(--muted)' }}>All categories</Link>
+        {cat && <><span>/</span><Link href={searchHref(cat)} style={{ color: sub ? 'var(--muted)' : 'var(--ink)' }}>{cat}</Link></>}
+        {sub && <><span>/</span><span style={{ color: 'var(--ink)' }}>{sub}</span></>}
+      </nav>
+      <h1 style={{ marginBottom: 6 }}>{sub ?? cat ?? (q ? `Results for “${q}”` : 'All open lots')}</h1>
+      <p className="muted" style={{ marginBottom: 16 }}>{lots.length} auction lots{listings.length ? ` · ${listings.length} for direct sale` : ''}{q && (cat || sub) ? ` matching “${q}”` : ''}</p>
+
+      <nav aria-label="Filter by category" className="row" style={{ gap: 8, marginBottom: subs.length ? 10 : 24 }}>
+        <Link href={withQ('/search')} className={`btn btn-sm ${!cat ? 'btn-dark' : 'btn-outline'}`}>All</Link>
+        {CATEGORY_TREE.map((c) => (
+          <Link key={c.name} href={withQ(searchHref(c.name))} className={`btn btn-sm ${cat === c.name ? 'btn-dark' : 'btn-outline'}`}>{c.short}</Link>
         ))}
       </nav>
-      {lots.length ? (
+      {subs.length > 0 && (
+        <nav aria-label="Filter by type" className="row small" style={{ gap: '6px 16px', marginBottom: 24 }}>
+          <Link href={withQ(searchHref(cat))} style={{ fontWeight: !sub ? 700 : 400 }}>All {cat}</Link>
+          {subs.map((s) => <Link key={s} href={withQ(searchHref(cat, s))} style={{ fontWeight: sub === s ? 700 : 400 }}>{s}</Link>)}
+        </nav>
+      )}
+
+      {lots.length > 0 ? (
         <div className="lot-grid">{lots.map((l) => <LotCard key={l.id} lot={l} watched={watched.has(l.id)} signedIn={!!user} />)}</div>
       ) : (
-        <p>No open lots match. Try another word, or check back — new auctions are added every week.</p>
+        <p>No open auction lots match{listings.length ? ' — see direct-sale items below.' : '. Try another word, or check back — new auctions are added every week.'}</p>
+      )}
+
+      {listings.length > 0 && (
+        <section style={{ marginTop: 40 }}>
+          <div className="row between" style={{ marginBottom: 16 }}>
+            <h2 style={{ fontSize: 26 }}>Buy now — direct sale</h2>
+            <Link href="/direct-sale">All direct-sale items</Link>
+          </div>
+          <div className="lot-grid">{listings.map((l) => <ListingCard key={l.id} listing={l} />)}</div>
+        </section>
       )}
     </div>
   );

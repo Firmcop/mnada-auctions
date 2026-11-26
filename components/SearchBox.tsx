@@ -2,10 +2,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { kes, photoUrl } from '@/lib/format';
+import { kes, listingPrice, photoUrl } from '@/lib/format';
 import { SearchIcon } from './Icons';
 
-type Hit = { id: string; title: string; category: string | null; location: string | null; photos: string[]; bid_count: number; current_bid: number | null; start_bid: number };
+type Hit = { id: string; href: string; title: string; meta: string; photo?: string; price: string };
 
 export default function SearchBox() {
   const router = useRouter();
@@ -22,15 +22,26 @@ export default function SearchBox() {
     if (term.length < 2) { setHits([]); setLoading(false); return; }
     setLoading(true);
     const t = setTimeout(async () => {
-      const { data } = await supabase
-        .from('auction_lots')
-        .select('id, title, category, location, photos, bid_count, current_bid, start_bid, auction_auctions!inner(status)')
-        .eq('status', 'open')
-        .eq('auction_auctions.status', 'live')
-        .or(`title.ilike.%${term}%,category.ilike.%${term}%,description.ilike.%${term}%,location.ilike.%${term}%`)
-        .order('closes_at')
-        .limit(6);
-      setHits((data ?? []) as unknown as Hit[]);
+      const or = `title.ilike.%${term}%,category.ilike.%${term}%,subcategory.ilike.%${term}%,description.ilike.%${term}%,location.ilike.%${term}%`;
+      const [{ data: lots }, { data: listings }] = await Promise.all([
+        supabase.from('auction_lots')
+          .select('id, title, category, subcategory, location, photos, bid_count, current_bid, start_bid, auction_auctions!inner(status)')
+          .eq('status', 'open').eq('auction_auctions.status', 'live').or(or).order('closes_at').limit(5),
+        supabase.from('auction_listings')
+          .select('id, slug, title, category, subcategory, location, photos, price, price_type')
+          .eq('status', 'active').or(or).limit(3),
+      ]);
+      const a: Hit[] = (lots ?? []).map((l) => ({
+        id: l.id, href: `/lots/${l.id}`, title: l.title, photo: l.photos?.[0],
+        meta: ['Auction', l.subcategory ?? l.category, l.location].filter(Boolean).join(' · '),
+        price: `KES ${kes(l.bid_count > 0 ? l.current_bid : l.start_bid)}`,
+      }));
+      const b: Hit[] = (listings ?? []).map((l) => ({
+        id: l.id, href: `/direct-sale/${l.slug}`, title: l.title, photo: l.photos?.[0],
+        meta: ['Buy now', l.subcategory ?? l.category, l.location].filter(Boolean).join(' · '),
+        price: listingPrice(l).replace(' · or make an offer', ''),
+      }));
+      setHits([...b, ...a].slice(0, 7));
       setActive(-1);
       setLoading(false);
     }, 250);
@@ -53,7 +64,7 @@ export default function SearchBox() {
     if (e.key === 'ArrowDown') { e.preventDefault(); setActive((a) => Math.min(hits.length - 1, a + 1)); }
     if (e.key === 'ArrowUp') { e.preventDefault(); setActive((a) => Math.max(-1, a - 1)); }
     if (e.key === 'Escape') setOpen(false);
-    if (e.key === 'Enter' && active >= 0) { e.preventDefault(); go(`/lots/${hits[active].id}`); }
+    if (e.key === 'Enter' && active >= 0) { e.preventDefault(); go(hits[active].href); }
   }
 
   const showPanel = open && q.trim().length >= 2;
@@ -70,20 +81,20 @@ export default function SearchBox() {
       {showPanel && (
         <div id="search-results" role="listbox" style={{ position: 'absolute', top: 'calc(100% + 6px)', left: 0, right: 0, background: '#fff', border: '1px solid var(--line)', borderRadius: 10, boxShadow: '0 12px 32px rgba(15,42,61,.14)', zIndex: 40, overflow: 'hidden' }}>
           {loading && hits.length === 0 && <div className="small muted" style={{ padding: 14 }}>Searching…</div>}
-          {!loading && hits.length === 0 && <div className="small muted" style={{ padding: 14 }}>No open lots match “{q.trim()}”.</div>}
+          {!loading && hits.length === 0 && <div className="small muted" style={{ padding: 14 }}>Nothing matches “{q.trim()}”.</div>}
           {hits.map((h, i) => (
-            <a key={h.id} id={`hit-${h.id}`} role="option" aria-selected={i === active} href={`/lots/${h.id}`}
-              onClick={(e) => { e.preventDefault(); go(`/lots/${h.id}`); }}
+            <a key={h.id} id={`hit-${h.id}`} role="option" aria-selected={i === active} href={h.href}
+              onClick={(e) => { e.preventDefault(); go(h.href); }}
               style={{ display: 'flex', gap: 12, alignItems: 'center', padding: '10px 12px', textDecoration: 'none', color: 'inherit', background: i === active ? 'var(--surface)' : '#fff', borderBottom: '1px solid #F0F2F4' }}>
               <span className="thumb" style={{ width: 56, height: 42, borderRadius: 6, flex: 'none', background: '#E6EAEE' }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                {h.photos?.[0] && <img src={photoUrl(h.photos[0])} alt="" />}
+                {h.photo && <img src={photoUrl(h.photo)} alt="" />}
               </span>
               <span className="stack" style={{ gap: 0, flex: 1, minWidth: 0 }}>
                 <span style={{ fontWeight: 600, fontSize: 14, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{h.title}</span>
-                <span className="small muted">{[h.category, h.location].filter(Boolean).join(' · ')}</span>
+                <span className="small muted">{h.meta}</span>
               </span>
-              <span style={{ fontWeight: 700, fontSize: 14, color: 'var(--navy)', whiteSpace: 'nowrap' }}>KES {kes(h.bid_count > 0 ? h.current_bid : h.start_bid)}</span>
+              <span style={{ fontWeight: 700, fontSize: 14, color: 'var(--navy)', whiteSpace: 'nowrap' }}>{h.price}</span>
             </a>
           ))}
           {hits.length > 0 && (
