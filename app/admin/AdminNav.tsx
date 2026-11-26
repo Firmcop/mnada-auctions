@@ -15,6 +15,8 @@ const ITEMS = [
   ['/admin/consignments', 'Items sent for auction'],
   ['/admin/help', 'Listing Help jobs'],
   ['/admin/invoices', 'Payments & collection'],
+  ['/admin/payouts', 'Seller payouts'],
+  ['/admin/finance', 'Finance'],
   ['/admin/valuations', 'Valuation requests'],
 ];
 

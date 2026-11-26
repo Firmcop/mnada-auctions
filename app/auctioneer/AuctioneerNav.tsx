@@ -6,6 +6,7 @@ const ITEMS = [
   ['/auctioneer', 'Dashboard'],
   ['/auctioneer/auctions/new', 'New auction'],
   ['/auctioneer/import', 'Bulk import lots'],
+  ['/auctioneer/payouts', 'Sales & payouts'],
   ['/auctioneer/profile', 'Firm profile & team'],
 ];
 
