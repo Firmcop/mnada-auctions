@@ -1,7 +1,9 @@
+import { requireArea } from '@/lib/require-area';
 import { createClient } from '@/lib/supabase/server';
 import EnquiryInbox, { type EnquiryRow } from './EnquiryInbox';
 
 export default async function EnquiriesPage() {
+  await requireArea('people');
   const supabase = await createClient();
   const { data } = await supabase.from('auction_enquiries')
     .select('*, auction_listings(title, slug, ref_no, price, price_type)')

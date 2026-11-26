@@ -1,3 +1,4 @@
+import { requireArea } from '@/lib/require-area';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { kes } from '@/lib/format';
@@ -7,6 +8,7 @@ import { incomeLines } from '@/lib/finance';
 const PERIODS: [string, string, number][] = [['30', 'Last 30 days', 30], ['90', 'Last 90 days', 90], ['365', 'Last 12 months', 365]];
 
 export default async function FinancePage({ searchParams }: { searchParams: Promise<{ p?: string }> }) {
+  await requireArea('finance');
   const { p = '30' } = await searchParams;
   const days = PERIODS.find((x) => x[0] === p)?.[2] ?? 30;
   const since = new Date(Date.now() - days * 86400000).toISOString();

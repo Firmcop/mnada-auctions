@@ -1,9 +1,11 @@
+import { requireArea } from '@/lib/require-area';
 import { createClient } from '@/lib/supabase/server';
 import { kes } from '@/lib/format';
 import type { Payout, Settlement } from '@/lib/settlements';
 import PayoutsAdmin from './PayoutsAdmin';
 
 export default async function AdminPayouts() {
+  await requireArea('finance');
   const supabase = await createClient();
   const [{ data: settings }, { data: st }, { data: po }, { data: firms }] = await Promise.all([
     supabase.from('auction_payout_settings').select('*').eq('id', 1).single(),

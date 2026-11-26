@@ -1,6 +1,8 @@
+import { requireArea } from '@/lib/require-area';
 import { createClient } from '@/lib/supabase/server';
 
 export default async function ValuationsPage() {
+  await requireArea('people');
   const supabase = await createClient();
   const { data } = await supabase.from('auction_valuations').select('*').order('created_at', { ascending: false }).limit(200);
   return (

@@ -1,8 +1,10 @@
+import { requireArea } from '@/lib/require-area';
 import { createClient } from '@/lib/supabase/server';
 import { kes } from '@/lib/format';
 import AiAdmin from './AiAdmin';
 
 export default async function AdminAiPage() {
+  await requireArea('finance');
   const supabase = await createClient();
   const since = new Date(Date.now() - 30 * 86400000).toISOString();
   const [{ data: settings }, { data: prices }, { data: plans }, { data: payments }, { data: usage }, { data: accounts }] = await Promise.all([

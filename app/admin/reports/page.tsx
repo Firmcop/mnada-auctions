@@ -1,3 +1,4 @@
+import { requireArea } from '@/lib/require-area';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { kes } from '@/lib/format';
@@ -5,6 +6,7 @@ import { EXPENSE_CATEGORIES } from '@/lib/erp';
 import { byStream, incomeLines, VAT_STREAM } from '@/lib/finance';
 
 export default async function ReportsPage({ searchParams }: { searchParams: Promise<{ y?: string }> }) {
+  await requireArea('finance');
   const { y } = await searchParams;
   const nowYear = new Date(Date.now() + 3 * 3600 * 1000).getUTCFullYear();
   const year = Number(y) || nowYear;

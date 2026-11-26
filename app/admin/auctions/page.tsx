@@ -1,9 +1,11 @@
+import { requireArea } from '@/lib/require-area';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { eat } from '@/lib/format';
 import AuctionForm from './AuctionForm';
 
 export default async function AdminAuctions() {
+  await requireArea('catalogue');
   const supabase = await createClient();
   const { data: auctions } = await supabase.from('auction_auctions').select('*').order('created_at', { ascending: false });
   const { data: lots } = await supabase.from('auction_lots').select('auction_id');

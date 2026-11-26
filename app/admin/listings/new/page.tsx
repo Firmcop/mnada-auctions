@@ -1,7 +1,9 @@
+import { requireArea } from '@/lib/require-area';
 import Link from 'next/link';
 import ListingForm from '../ListingForm';
 
-export default function NewListing() {
+export default async function NewListing() {
+  await requireArea('catalogue');
   return (
     <>
       <div className="stack" style={{ gap: 4 }}>

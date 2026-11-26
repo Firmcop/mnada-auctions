@@ -1,9 +1,11 @@
+import { requireArea } from '@/lib/require-area';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import LotForm from '../LotForm';
 
 export default async function NewLot({ searchParams }: { searchParams: Promise<{ auction?: string }> }) {
+  await requireArea('catalogue');
   const { auction: auctionId } = await searchParams;
   if (!auctionId) notFound();
   const supabase = await createClient();

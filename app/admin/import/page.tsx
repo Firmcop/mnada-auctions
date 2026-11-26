@@ -1,7 +1,9 @@
+import { requireArea } from '@/lib/require-area';
 import { createClient } from '@/lib/supabase/server';
 import ImportTool from './ImportTool';
 
 export default async function ImportPage() {
+  await requireArea('catalogue');
   const supabase = await createClient();
   const { data } = await supabase.from('auction_auctions').select('id, title, first_close_at').neq('status', 'closed').order('created_at', { ascending: false });
   return (

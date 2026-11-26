@@ -1,3 +1,4 @@
+import { requireArea } from '@/lib/require-area';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { kes } from '@/lib/format';
@@ -6,6 +7,7 @@ import ExpenseForm from './ExpenseForm';
 import ExpenseList from './ExpenseList';
 
 export default async function ExpensesPage({ searchParams }: { searchParams: Promise<{ m?: string }> }) {
+  await requireArea('finance');
   const { m } = await searchParams;
   const month = /^\d{4}-\d{2}$/.test(m ?? '') ? m! : new Date(Date.now() + 3 * 3600 * 1000).toISOString().slice(0, 7);
   const [y, mo] = month.split('-').map(Number);

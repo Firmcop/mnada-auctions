@@ -1,7 +1,9 @@
+import { requireArea } from '@/lib/require-area';
 import { createClient } from '@/lib/supabase/server';
 import ConsignmentAdmin, { type ConsignRow } from './ConsignmentAdmin';
 
 export default async function ConsignmentsPage() {
+  await requireArea('people');
   const supabase = await createClient();
   const [{ data }, { data: auctions }] = await Promise.all([
     supabase.from('auction_consignments').select('*').order('created_at', { ascending: false }).limit(300),

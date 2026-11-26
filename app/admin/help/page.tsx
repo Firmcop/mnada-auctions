@@ -1,3 +1,4 @@
+import { requireArea } from '@/lib/require-area';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { kes } from '@/lib/format';
@@ -9,6 +10,7 @@ const COLS: [HelpStatus, string][] = [
 ];
 
 export default async function AdminHelpPage() {
+  await requireArea('catalogue');
   const supabase = await createClient();
   const since = new Date(Date.now() - 30 * 86400000).toISOString();
   const [{ data }, { data: staff }, { data: pays }] = await Promise.all([

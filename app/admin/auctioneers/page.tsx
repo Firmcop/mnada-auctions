@@ -1,9 +1,11 @@
+import { requireArea } from '@/lib/require-area';
 import { createClient } from '@/lib/supabase/server';
 import { kes } from '@/lib/format';
 import type { Firm, FirmFee, FirmPrivate, FirmSettings } from '@/lib/auctioneer';
 import FirmsAdmin from './FirmsAdmin';
 
 export default async function AdminAuctioneers() {
+  await requireArea('operations');
   const supabase = await createClient();
   const since = new Date(Date.now() - 30 * 86400000).toISOString();
   const [{ data: firms }, { data: privs }, { data: settings }, { data: fees }, { data: review }] = await Promise.all([

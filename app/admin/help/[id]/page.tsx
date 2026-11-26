@@ -1,3 +1,4 @@
+import { requireArea } from '@/lib/require-area';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
@@ -5,6 +6,7 @@ import type { HelpPayment, HelpRequest, HelpService, QuoteLine } from '@/lib/hel
 import JobAdmin from './JobAdmin';
 
 export default async function AdminHelpJob({ params }: { params: Promise<{ id: string }> }) {
+  await requireArea('catalogue');
   const { id } = await params;
   const supabase = await createClient();
   const { data: req } = await supabase.from('auction_help_requests').select('*').eq('id', id).maybeSingle();

@@ -1,3 +1,4 @@
+import { requireArea } from '@/lib/require-area';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
@@ -5,6 +6,7 @@ import type { Listing } from '@/lib/format';
 import ListingForm from '../ListingForm';
 
 export default async function EditListing({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ saved?: string }> }) {
+  await requireArea('catalogue');
   const { id } = await params;
   const { saved } = await searchParams;
   const supabase = await createClient();

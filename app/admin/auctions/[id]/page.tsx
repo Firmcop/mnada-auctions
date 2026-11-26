@@ -1,3 +1,4 @@
+import { requireArea } from '@/lib/require-area';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
@@ -6,6 +7,7 @@ import AuctionForm from '../AuctionForm';
 import CloseNowButton from './CloseNowButton';
 
 export default async function AdminAuction({ params }: { params: Promise<{ id: string }> }) {
+  await requireArea('catalogue');
   const { id } = await params;
   const supabase = await createClient();
   const { data: auction } = await supabase.from('auction_auctions').select('*').eq('id', id).maybeSingle();

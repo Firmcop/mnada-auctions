@@ -1,9 +1,11 @@
+import { requireArea } from '@/lib/require-area';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { listingPrice, type Listing } from '@/lib/format';
 import ReviewButtons from './ReviewButtons';
 
 export default async function AdminListings() {
+  await requireArea('catalogue');
   const supabase = await createClient();
   const { data } = await supabase.from('auction_listings').select('*').order('created_at', { ascending: false });
   const { data: enq } = await supabase.from('auction_enquiries').select('listing_id, status');

@@ -1,9 +1,11 @@
+import { requireArea } from '@/lib/require-area';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import type { HelpService, HelpSettings } from '@/lib/help';
 import ServicesAdmin from './ServicesAdmin';
 
 export default async function HelpServicesPage() {
+  await requireArea('operations');
   const supabase = await createClient();
   const [{ data: services }, { data: settings }] = await Promise.all([
     supabase.from('auction_help_services').select('*').order('sort'),

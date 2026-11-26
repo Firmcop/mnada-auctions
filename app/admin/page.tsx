@@ -1,8 +1,12 @@
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, getSession } from '@/lib/supabase/server';
+import { areaFor, canArea, type StaffRole } from '@/lib/staff';
 import { eat, kes } from '@/lib/format';
 
-export default async function AdminHome() {
+export default async function AdminHome({ searchParams }: { searchParams: Promise<{ denied?: string }> }) {
+  const { denied } = await searchParams;
+  const { profile } = await getSession();
+  const role = (profile?.admin_role ?? 'owner') as StaffRole;
   const supabase = await createClient();
   const since = new Date(Date.now() - 86400000).toISOString();
   const [auctions, openLots, bidsToday, pending, unpaid, vals, recent] = await Promise.all([
@@ -37,7 +41,7 @@ export default async function AdminHome() {
     [firmReviews ?? 0, 'auctioneer auctions to approve', '/admin/auctioneers'],
     [firmFees ?? 0, 'auctioneer listing fees to confirm', '/admin/auctioneers'],
     [(toBatch ?? 0) + (toPay ?? 0), 'seller/auctioneer payouts to make', '/admin/payouts'],
-  ] as [number, string, string][]).filter(([n]) => n > 0);
+  ] as [number, string, string][]).filter(([n, , href]) => n > 0 && canArea(role, areaFor(href)));
   const lots = openLots.data ?? [];
   const owed = (unpaid.data ?? []).reduce((s, i) => s + Number(i.total) - Number(i.paid), 0);
 
@@ -48,12 +52,13 @@ export default async function AdminHome() {
           <h1 style={{ fontSize: 28 }}>Dashboard</h1>
           <span className="small muted">{eat(new Date())}</span>
         </div>
-        <Link href="/admin/auctions" className="btn btn-primary">Add auction or lot</Link>
+        {canArea(role, 'catalogue') && <Link href="/admin/auctions" className="btn btn-primary">Add auction or lot</Link>}
       </div>
+      {denied && <div className="alert alert-err">Your staff role doesn&apos;t include that page. Ask an owner if you need access.</div>}
       {todo.length > 0 && (
         <div className="alert alert-info row" style={{ gap: '6px 18px' }}>
           <b>To do:</b>
-          {todo.map(([n, label, href]) => <Link key={href} href={href}>{n} {label}</Link>)}
+          {todo.map(([n, label, href]) => <Link key={label} href={href}>{n} {label}</Link>)}
         </div>
       )}
       <div className="kpis">

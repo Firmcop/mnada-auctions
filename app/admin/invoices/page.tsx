@@ -1,7 +1,9 @@
+import { requireArea } from '@/lib/require-area';
 import { createClient } from '@/lib/supabase/server';
 import InvoiceTable, { type InvoiceRow } from './InvoiceTable';
 
 export default async function InvoicesPage() {
+  await requireArea('people');
   const supabase = await createClient();
   const { data } = await supabase
     .from('auction_invoices')

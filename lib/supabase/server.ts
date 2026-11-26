@@ -44,6 +44,7 @@ export type Profile = {
   payout_method: 'mpesa' | 'bank' | null;
   payout_details: string | null;
   commission_pct: number;
+  admin_role: 'owner' | 'operations' | 'finance' | 'lister' | null;
   seller_applied_at: string | null;
   created_at: string;
 };

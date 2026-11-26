@@ -1,8 +1,10 @@
+import { requireArea } from '@/lib/require-area';
 import { createClient } from '@/lib/supabase/server';
 import type { StockItem } from '@/lib/erp';
 import StockAdmin from './StockAdmin';
 
 export default async function StockPage() {
+  await requireArea('catalogue');
   const supabase = await createClient();
   const [{ data }, { data: sellers }, { data: jobs }, { data: lots }, { data: listings }] = await Promise.all([
     supabase.from('auction_stock').select('*').order('received_at', { ascending: false }).limit(1000),
