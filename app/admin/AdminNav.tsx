@@ -12,6 +12,7 @@ const TOP: Item[] = [['/admin', 'Dashboard']];
 const GROUPS: Group[] = [
   { key: 'sales', label: 'Auctions & sales', items: [
     ['/admin/auctions', 'Auctions & lots'],
+    ['/admin/allocations', 'Allocation'],
     ['/admin/listings', 'Direct sale'],
     ['/admin/import', 'Bulk import'],
     ['/admin/enquiries', 'Enquiries & offers'],
@@ -32,6 +33,7 @@ const GROUPS: Group[] = [
     ['/admin/finance', 'Overview'],
     ['/admin/invoices', 'Payments & collection'],
     ['/admin/payouts', 'Seller payouts'],
+    ['/admin/premium', 'Buyer’s premium'],
     ['/admin/expenses', 'Expenses'],
     ['/admin/reports', 'Reports'],
     ['/admin/ai', 'AI tools & billing'],

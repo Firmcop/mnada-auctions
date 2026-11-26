@@ -31,6 +31,8 @@ export default async function LotPage({ params }: { params: Promise<{ id: string
   const { auction_auctions: auction, ...rest } = data as Lot & { auction_auctions: Auction };
   const lot = rest as Lot;
   const watched = await getWatchedIds(supabase, user?.id);
+  const { data: premData } = await supabase.rpc('auction_premium_pct', { p_lot: lot.id, p_hammer: Number(lot.current_bid ?? lot.start_bid) });
+  const premiumPct = Number(premData ?? auction.premium_pct);
   const { count: firmCount } = user && auction.auctioneer_id ? await supabase.from('auction_auctioneer_members').select('user_id', { count: 'exact', head: true }).eq('auctioneer_id', auction.auctioneer_id).eq('user_id', user.id) : { count: 0 };
   const firmStaff = (firmCount ?? 0) > 0;
   const { data: firm } = auction.auctioneer_id ? await supabase.from('auction_auctioneers').select('slug, name, licence_no, logo').eq('id', auction.auctioneer_id).maybeSingle() : { data: null };
@@ -129,14 +131,22 @@ export default async function LotPage({ params }: { params: Promise<{ id: string
             {auction.inspection_text && <div style={{ background: 'var(--surface)', borderRadius: 12, padding: 18 }}><b>Inspection</b><p className="small" style={{ marginTop: 6 }}>{auction.inspection_text}</p></div>}
             {auction.collection_text && <div style={{ background: 'var(--surface)', borderRadius: 12, padding: 18 }}><b>Collection</b><p className="small" style={{ marginTop: 6 }}>{auction.collection_text}</p></div>}
             {firm && <div style={{ background: 'var(--surface)', borderRadius: 12, padding: 18 }}><FirmBadge firm={firm} compact />{auction.terms_text && <p className="small" style={{ marginTop: 8, whiteSpace: 'pre-line' }}>{auction.terms_text.slice(0, 400)}{auction.terms_text.length > 400 ? '…' : ''} <Link href={`/auctions/${auction.slug}`}>Full terms</Link></p>}</div>}
-            <div style={{ background: 'var(--surface)', borderRadius: 12, padding: 18 }}><b>Fees</b><p className="small" style={{ marginTop: 6 }}>Buyer&apos;s premium {auction.premium_pct}% + 16% VAT on the premium{lot.vat_on_hammer ? ', plus 16% VAT on the hammer price' : ''}. <a href="/help#costs">How costs work</a></p></div>
+            <div style={{ background: 'var(--surface)', borderRadius: 12, padding: 18 }}>
+              <b>{lot.sale_type === 'allocation' ? 'Seller approval (allocation)' : lot.has_reserve ? 'Reserve price' : 'No reserve'}</b>
+              <p className="small" style={{ marginTop: 6 }}>{lot.sale_type === 'allocation'
+                ? 'After bidding closes the seller decides whether to accept the highest bid, usually within 48 hours. Your bid stays binding until then.'
+                : lot.has_reserve
+                  ? (lot.reserve_met ? 'The hidden reserve has been met — the highest bid at closing wins.' : 'This lot has a hidden reserve. If bidding ends below it, the seller may still accept, counter-offer or decline within 48 hours.')
+                  : 'The highest bid at closing wins.'}</p>
+            </div>
+            <div style={{ background: 'var(--surface)', borderRadius: 12, padding: 18 }}><b>Fees</b><p className="small" style={{ marginTop: 6 }}>Buyer&apos;s premium {premiumPct}% + 16% VAT on the premium{lot.vat_on_hammer ? ', plus 16% VAT on the hammer price' : ''}. <a href="/help#costs">How costs work</a></p></div>
           </section>
         </div>
         <aside style={{ flex: '1 1 360px', minWidth: 0, position: 'sticky', top: 16 }}>
           <BidPanel
             initialLot={lot}
             auctionLive={auction.status === 'live'}
-            premiumPct={Number(auction.premium_pct)}
+            premiumPct={premiumPct}
             userId={user?.id ?? null}
             profileStatus={profile?.is_admin || firmStaff ? 'staff' : profile?.status ?? null}
             bidLimit={profile?.bid_limit ?? null}

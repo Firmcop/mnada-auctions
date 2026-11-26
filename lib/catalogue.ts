@@ -12,7 +12,7 @@ export const LISTING_COLUMNS = [
 
 export const LOT_COLUMNS = [
   'lot_no', 'title', 'category', 'type', 'description', 'specs', 'start_bid', 'reserve', 'closes_at', 'location',
-  'condition', 'seller', 'vat_on_hammer', 'extra_costs', 'photos', 'seo_title', 'seo_description',
+  'condition', 'seller', 'seller_approval', 'vat_on_hammer', 'extra_costs', 'photos', 'seo_title', 'seo_description',
 ] as const;
 
 export const COLUMN_HELP: Record<string, string> = {
@@ -32,6 +32,7 @@ export const COLUMN_HELP: Record<string, string> = {
   status: 'draft or active',
   featured: 'yes or no',
   vat_on_hammer: 'yes or no',
+  seller_approval: 'yes = the seller approves the highest bid after closing (allocation lot); no or empty = sells automatically at or above the reserve',
   extra_costs: 'Label: amount: mandatory|optional; … — e.g. Loading: 15000: mandatory',
   photos: 'Photo file names separated by semicolons. Leave empty to match files that start with the code / lot number (e.g. CH40-2BR-1.jpg, lot12_2.jpg).',
   seo_title: 'Optional — leave empty for the automatic search title.',
@@ -49,7 +50,7 @@ export const EXAMPLE_LISTING: RawRow = {
 export const EXAMPLE_LOT: RawRow = {
   lot_no: '1', title: 'Caterpillar 320D excavator, 2013', category: 'Construction & earthmoving', type: 'Excavators',
   description: 'Starts and drives. Service records available.', specs: 'Hours: 9,800; Bucket: 1.0 m³', start_bid: '2000000', reserve: '2800000',
-  closes_at: '', location: 'Mombasa', condition: 'tested', seller: 'commercial', vat_on_hammer: 'yes',
+  closes_at: '', location: 'Mombasa', condition: 'tested', seller: 'commercial', seller_approval: 'no', vat_on_hammer: 'yes',
   extra_costs: 'Loading onto truck: 15000: mandatory', photos: '', seo_title: '', seo_description: '',
 };
 

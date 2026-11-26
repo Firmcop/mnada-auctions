@@ -23,7 +23,9 @@ const SECTIONS: { id: string; title: string; items: [string, React.ReactNode][] 
       ['What is auto-bid?', 'Enter the most you are willing to pay. We bid for you, one step at a time and only as high as needed to keep you in the lead, up to your maximum. Auto-bids are marked “(auto)” in the bid history. If an auto-bid and a later bid are for the same amount, the earlier one leads.'],
       ['What are the bid steps?', <>The minimum step depends on the current price: KES 1,000 below 50,000; KES 5,000 up to 200,000; KES 20,000 up to 1 million; KES 50,000 up to 5 million; KES 100,000 above that.</>],
       ['When does a lot close?', 'Each lot has its own closing time; lots in an auction close one minute apart. If anyone bids in the last 2 minutes, that lot is extended by 2 minutes, so everyone gets a fair chance to respond.'],
-      ['What is a reserve?', 'Some lots have a hidden minimum price set by the seller. The lot page shows “Reserve met” or “Reserve not yet met”. If the reserve is not met when bidding closes, the lot is not sold.'],
+      ['What is a reserve?', 'Some lots have a hidden minimum price set by the seller. The lot page shows “Reserve met” or “Reserve not yet met”. If the highest bid at closing meets the reserve, that bidder wins automatically.'],
+      ['What is allocation?', <>If bidding closes below the reserve — or on a “seller approval” lot — the lot goes to allocation. The seller has 48 hours to accept the highest bid, send the highest bidder a counter-offer (you can accept, decline or counter once more), offer it to the next bidder, or decline. Your highest bid stays binding until the seller decides. Follow it under <Link href="/account/offers">Offers &amp; allocation</Link>.</>],
+      ['What are the three kinds of lot?', 'No reserve: the highest bid wins. Reserve price: the highest bid at or above the hidden reserve wins; below it, the lot goes to allocation. Seller approval: the seller always confirms the highest bid after closing.'],
     ],
   },
   {
@@ -39,8 +41,8 @@ const SECTIONS: { id: string; title: string; items: [string, React.ReactNode][] 
     id: 'payment',
     title: 'Paying & collecting',
     items: [
-      ['When and how do I pay?', 'Your invoice appears under My bids as soon as the lot closes. Pay within 3 working days by M-Pesa Paybill or bank transfer, using the invoice number as the reference.'],
-      ['What if I don’t pay on time?', 'The lot may be re-sold, and you may be charged for the seller’s loss and lose your bidding rights. See the terms of sale.'],
+      ['When and how do I pay?', 'Your invoice appears under My bids as soon as the lot closes. Pay within 5 working days by M-Pesa Paybill, bank transfer, RTGS or PesaLink, using the invoice number as the reference. Part-payments are added to the invoice. We remind you 2 days before the due date.'],
+      ['What if I don’t pay on time?', 'The sale may be cancelled and the lot offered to the next bidder. The non-payment is recorded on your account, you may be charged for the seller’s loss, and you may lose your bidding rights. See the terms of sale.'],
       ['How do I collect?', 'Once the invoice is fully paid, collect on the dates shown for the auction. Bring your ID and the invoice. Some lots must be dismantled and removed by the buyer — check the condition tags.'],
     ],
   },

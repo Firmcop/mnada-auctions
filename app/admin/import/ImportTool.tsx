@@ -70,7 +70,7 @@ export default function ImportTool({ auctions, mode = 'admin', lotFolder = 'lots
       const { data: ls } = await supabase.from('auction_lots').select('*').eq('auction_id', auctionId).order('lot_no');
       const { data: priv } = await supabase.from('auction_lot_private').select('lot_id, reserve');
       const res = (id: string) => (priv ?? []).find((p) => p.lot_id === id)?.reserve ?? '';
-      data = ((ls ?? []) as Lot[]).map((l) => [l.lot_no, l.title, l.category ?? '', l.subcategory ?? '', l.description ?? '', specs(l.specs), l.start_bid, res(l.id), cellToString(new Date(l.closes_at)), l.location ?? '', l.condition_tags.join(', '), l.seller_type, l.vat_on_hammer ? 'yes' : 'no', l.extra_costs.map((e) => `${e.label}: ${e.amount}: ${e.mandatory ? 'mandatory' : 'optional'}`).join('; '), '', l.seo_title ?? '', l.seo_description ?? '']);
+      data = ((ls ?? []) as Lot[]).map((l) => [l.lot_no, l.title, l.category ?? '', l.subcategory ?? '', l.description ?? '', specs(l.specs), l.start_bid, res(l.id), cellToString(new Date(l.closes_at)), l.location ?? '', l.condition_tags.join(', '), l.seller_type, l.sale_type === 'allocation' ? 'yes' : 'no', l.vat_on_hammer ? 'yes' : 'no', l.extra_costs.map((e) => `${e.label}: ${e.amount}: ${e.mandatory ? 'mandatory' : 'optional'}`).join('; '), '', l.seo_title ?? '', l.seo_description ?? '']);
     }
     await writeXlsxFile([columns.map((c) => ({ value: c, fontWeight: 'bold' as const })), ...data], { columns: columns.map(() => ({ width: 24 })) })
       .toFile(target === 'listings' ? 'mnada-products-current.xlsx' : 'mnada-lots-current.xlsx');
@@ -199,6 +199,7 @@ export default function ImportTool({ auctions, mode = 'admin', lotFolder = 'lots
             title: c.title, category: c.category, subcategory: c.sub, description: r.description || null, specs, location: r.location || null,
             condition_tags: tags, seller_type: ['own', 'commercial', 'receiver', 'private'].includes(seller) ? seller : 'own',
             vat_on_hammer: r.vat_on_hammer ? yes(r.vat_on_hammer) : true, extra_costs: parseExtras(r.extra_costs),
+            sale_type: r.seller_approval && yes(r.seller_approval) ? 'allocation' : 'standard',
             seo_title: r.seo_title || null, seo_description: r.seo_description || null,
             ...(locked ? {} : { start_bid: num(r.start_bid)!, closes_at: closes }),
             ...(uploaded.length ? { photos: uploaded } : {}),

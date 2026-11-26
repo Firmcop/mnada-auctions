@@ -91,7 +91,8 @@ export type Lot = {
   reserve_met: boolean;
   has_reserve: boolean;
   closes_at: string;
-  status: 'open' | 'sold' | 'unsold';
+  status: 'open' | 'allocation' | 'sold' | 'unsold';
+  sale_type?: 'standard' | 'allocation';
   vat_on_hammer: boolean;
   condition_tags: string[];
   watch_count: number;

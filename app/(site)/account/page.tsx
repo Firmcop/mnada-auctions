@@ -44,6 +44,7 @@ export default async function AccountPage() {
       {profile && (
         <nav className="row small" aria-label="Account" style={{ gap: 8 }}>
           <Link href="/account/alerts" className="btn btn-outline btn-sm">Alerts</Link>
+          <Link href="/account/offers" className="btn btn-outline btn-sm">Offers &amp; allocation</Link>
           <Link href="/watchlist" className="btn btn-outline btn-sm">Watchlist</Link>
           <Link href={profile.seller_status === 'approved' ? '/seller' : '/account/seller'} className="btn btn-outline btn-sm">{profile.seller_status === 'approved' ? 'Seller portal' : 'Sell on Mnada'}</Link>
           <Link href="/account/listing-help" className="btn btn-outline btn-sm">Listing Help</Link>

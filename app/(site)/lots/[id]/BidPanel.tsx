@@ -96,7 +96,7 @@ export default function BidPanel(props: {
       <div className="card stack" style={{ padding: 22, gap: 16, boxShadow: '0 8px 24px rgba(15,42,61,.06)' }}>
         <div className="row between">
           {isOpen ? <Countdown closesAt={lot.closes_at} /> : <span className="pill pill-grey">Bidding closed</span>}
-          <span className="small muted">{isOpen ? `Closes ${eat(lot.closes_at)}` : lot.status === 'sold' ? 'Sold' : ''}</span>
+          <span className="small muted">{isOpen ? `Closes ${eat(lot.closes_at)}` : lot.status === 'sold' ? 'Sold' : lot.status === 'allocation' ? 'Bidding closed — awaiting the seller’s decision' : lot.status === 'unsold' ? 'Not sold' : ''}</span>
         </div>
 
         <div className="stack" style={{ gap: 2 }}>

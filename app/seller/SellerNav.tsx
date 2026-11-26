@@ -7,6 +7,7 @@ const ITEMS = [
   ['/seller/listings', 'Direct-sale listings'],
   ['/seller/consign', 'Send items for auction'],
   ['/seller/enquiries', 'Enquiries & offers'],
+  ['/seller/allocations', 'Decisions (allocation)'],
   ['/seller/sales', 'Sales & payouts'],
   ['/account/listing-help', 'Listing Help'],
   ['/account/storage', 'Storage at the yard'],

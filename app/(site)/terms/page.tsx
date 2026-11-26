@@ -23,15 +23,15 @@ export default function TermsPage() {
       <p>4.1 Every bid you confirm is a binding offer to buy the lot at that price plus the costs in section 5, and cannot be withdrawn.</p>
       <p>4.2 An auto-bid authorises us to bid for you in the published steps up to your maximum. Where two bids are equal, the earlier one takes precedence.</p>
       <p>4.3 Each lot closes at its stated time. A bid received in the last 2 minutes extends that lot by 2 minutes. Our system clock is decisive.</p>
-      <p>4.4 A lot may have a reserve price. If the highest bid is below the reserve when bidding closes, the lot is not sold.</p>
-      <p>4.5 The highest bidder at closing (subject to any reserve) buys the lot, and a contract of sale is formed at that moment. We may cancel a sale, withdraw a lot, or correct an obvious error, including where we reasonably suspect fraud or a technical fault.</p>
+      <p>4.4 A lot may have a reserve price, or be marked “seller approval”. If the highest bid is below the reserve when bidding closes, or the lot is a seller-approval lot, the lot goes to allocation: within 48 hours the seller may accept the highest bid, make a counter-offer to the highest bidder or to other bidders at or above their own highest bid, or decline. Your highest bid remains binding until the seller decides or the 48 hours end. Offers made in allocation are binding for 24 hours; a sale is formed when an offer is accepted. If no decision is made in time, the lot is not sold and all bidders are released.</p>
+      <p>4.5 The highest bidder at closing (subject to any reserve and to 4.4) buys the lot, and a contract of sale is formed at that moment. We may cancel a sale, withdraw a lot, or correct an obvious error, including where we reasonably suspect fraud or a technical fault.</p>
       <p>4.6 Mnada employees, and staff of an auctioneer firm in that firm&apos;s own auctions, may not bid, directly or through anyone else.</p>
 
       <h2>5. Price and costs</h2>
       <p>You will pay: (a) the hammer price; (b) the buyer’s premium shown on the auction and lot page, calculated on the hammer price; (c) any mandatory additional costs listed on the lot; and (d) VAT at 16% on the premium and additional costs, and on the hammer price where the lot states it is subject to VAT. Transport, export and any other costs are your responsibility unless stated.</p>
 
       <h2>6. Payment</h2>
-      <p>The invoice is issued when the lot closes and must be paid in full within 3 working days by M-Pesa or bank transfer, quoting the invoice number. Ownership passes to you only when we receive full payment. If you do not pay on time we may cancel the sale, re-sell the lot, and recover from you any shortfall and costs, keep any deposit, and close your account.</p>
+      <p>The invoice is issued when the lot closes and must be paid in full within 5 working days by M-Pesa, bank transfer, RTGS or PesaLink, quoting the invoice number. Ownership passes to you only when we receive full payment. If you do not pay on time we may cancel the sale, offer the lot to the next bidder or re-sell it, and recover from you any shortfall and costs, keep any deposit, and close your account.</p>
 
       <h2>7. Collection and risk</h2>
       <p>Collect on the dates and at the place stated for the auction, with ID and proof of payment. Risk in the lot passes to you when bidding closes [CONFIRM WITH ADVOCATE]. Where a lot is marked “buyer dismantles”, you must dismantle and remove it safely, with competent people and suitable equipment, and you are liable for any damage or injury caused. Lots not collected on time may incur storage charges of [AMOUNT] per day and may be treated as abandoned after [NUMBER] days.</p>

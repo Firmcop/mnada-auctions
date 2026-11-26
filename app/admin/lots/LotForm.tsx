@@ -81,6 +81,7 @@ export default function LotForm({ auctionId, auctionTitle, lot, reserve, default
       start_bid: startBid,
       closes_at: locked && lot ? lot.closes_at : eatInputToIso(g('closes_at')),
       vat_on_hammer: locked && lot ? lot.vat_on_hammer : f.get('vat_on_hammer') === 'on',
+      sale_type: locked && lot ? (lot.sale_type ?? 'standard') : (g('sale_type') === 'allocation' ? 'allocation' : 'standard'),
       condition_tags: tags,
       seo_title: g('seo_title') || null,
       seo_description: g('seo_description') || null,
@@ -230,6 +231,13 @@ export default function LotForm({ auctionId, auctionTitle, lot, reserve, default
             <label className="field">Reserve, hidden (KES, optional)<input className="input" name="reserve" inputMode="numeric" disabled={locked} defaultValue={reserve ? kes(reserve) : ''} placeholder="No reserve" /></label>
             <label className="field">Closes (Nairobi time)<input className="input" type="datetime-local" name="closes_at" required disabled={locked} defaultValue={isoToEatInput(lot?.closes_at ?? defaultClose)} /></label>
           </div>
+          <label className="field">How this lot sells
+            <select className="input" name="sale_type" disabled={locked} defaultValue={lot?.sale_type ?? 'standard'}>
+              <option value="standard">Automatically to the highest bid at or above the reserve (or any bid if no reserve)</option>
+              <option value="allocation">Seller approval — the seller decides on the highest bid after closing (allocation)</option>
+            </select>
+          </label>
+          <p className="small muted" style={{ margin: 0 }}>If a reserve is set and not reached, the lot goes to allocation: the seller has 48 hours to accept the highest bid, counter-offer or decline.</p>
           <label className="check"><input type="checkbox" name="vat_on_hammer" disabled={locked} defaultChecked={lot?.vat_on_hammer ?? true} />VAT applies to the hammer price (seller is VAT-registered)</label>
           {hasBids && <p className="small muted">This lot has bids, so the starting bid can no longer change.</p>}
         </section>
