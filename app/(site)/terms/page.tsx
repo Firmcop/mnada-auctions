@@ -25,6 +25,7 @@ export default function TermsPage() {
       <p>4.3 Each lot closes at its stated time. A bid received in the last 2 minutes extends that lot by 2 minutes. Our system clock is decisive.</p>
       <p>4.4 A lot may have a reserve price. If the highest bid is below the reserve when bidding closes, the lot is not sold.</p>
       <p>4.5 The highest bidder at closing (subject to any reserve) buys the lot, and a contract of sale is formed at that moment. We may cancel a sale, withdraw a lot, or correct an obvious error, including where we reasonably suspect fraud or a technical fault.</p>
+      <p>4.6 Mnada employees, and staff of an auctioneer firm in that firm&apos;s own auctions, may not bid, directly or through anyone else.</p>
 
       <h2>5. Price and costs</h2>
       <p>You will pay: (a) the hammer price; (b) the buyer’s premium shown on the auction and lot page, calculated on the hammer price; (c) any mandatory additional costs listed on the lot; and (d) VAT at 16% on the premium and additional costs, and on the hammer price where the lot states it is subject to VAT. Transport, export and any other costs are your responsibility unless stated.</p>

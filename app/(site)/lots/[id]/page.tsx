@@ -31,6 +31,8 @@ export default async function LotPage({ params }: { params: Promise<{ id: string
   const { auction_auctions: auction, ...rest } = data as Lot & { auction_auctions: Auction };
   const lot = rest as Lot;
   const watched = await getWatchedIds(supabase, user?.id);
+  const { count: firmCount } = user && auction.auctioneer_id ? await supabase.from('auction_auctioneer_members').select('user_id', { count: 'exact', head: true }).eq('auctioneer_id', auction.auctioneer_id).eq('user_id', user.id) : { count: 0 };
+  const firmStaff = (firmCount ?? 0) > 0;
   const { data: firm } = auction.auctioneer_id ? await supabase.from('auction_auctioneers').select('slug, name, licence_no, logo').eq('id', auction.auctioneer_id).maybeSingle() : { data: null };
   let myMax: number | null = null;
   if (user) {
@@ -136,7 +138,7 @@ export default async function LotPage({ params }: { params: Promise<{ id: string
             auctionLive={auction.status === 'live'}
             premiumPct={Number(auction.premium_pct)}
             userId={user?.id ?? null}
-            profileStatus={profile?.status ?? null}
+            profileStatus={profile?.is_admin || firmStaff ? 'staff' : profile?.status ?? null}
             bidLimit={profile?.bid_limit ?? null}
             initialMyMax={myMax}
           />

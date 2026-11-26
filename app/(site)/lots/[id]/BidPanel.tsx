@@ -129,7 +129,9 @@ export default function BidPanel(props: {
         )}
         {isOpen && props.userId && props.profileStatus !== 'approved' && (
           <div className="alert alert-info">
-            {props.profileStatus === null
+            {props.profileStatus === 'staff'
+              ? 'Staff of the auction house can’t bid in its auctions. '
+              : props.profileStatus === null
               ? 'Your account isn’t registered for bidding yet. '
               : props.profileStatus === 'rejected' ? 'Your registration was not approved. Contact us if you think this is a mistake. '
               : 'Your account is awaiting approval — usually within one working hour. '}
