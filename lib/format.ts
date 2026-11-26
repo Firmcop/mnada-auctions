@@ -143,6 +143,7 @@ export type Listing = {
 };
 
 export function listingPrice(l: Pick<Listing, 'price' | 'price_type'>) {
+  if (l.price_type === 'offer' && l.price === null) return 'Open to offers';
   if (l.price_type === 'on_request' || l.price === null) return 'Price on request';
   if (l.price_type === 'offer') return `KES ${kes(l.price)} · or make an offer`;
   return `KES ${kes(l.price)}`;

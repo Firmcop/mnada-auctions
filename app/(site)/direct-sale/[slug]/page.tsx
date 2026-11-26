@@ -67,10 +67,10 @@ export default async function ListingPage({ params }: { params: Promise<{ slug: 
               {l.status === 'active' ? 'BUY NOW · DIRECT SALE' : l.status === 'reserved' ? 'RESERVED' : 'SOLD'}
             </span>
             <span style={{ fontFamily: 'var(--font-head)', fontWeight: 800, fontSize: l.price === null ? 28 : 34, color: 'var(--navy)' }}>
-              {l.price_type === 'on_request' || l.price === null ? 'Price on request' : `KES ${Number(l.price).toLocaleString('en-US')}`}
+              {l.price === null ? (l.price_type === 'offer' ? 'Open to offers' : 'Price on request') : l.price_type === 'on_request' ? 'Price on request' : `KES ${Number(l.price).toLocaleString('en-US')}`}
             </span>
             <span className="small muted">
-              {l.price_type === 'offer' ? 'Asking price — offers considered. ' : l.price_type === 'fixed' ? 'Fixed price. ' : ''}
+              {l.price_type === 'offer' ? (l.price === null ? 'Tell us what you would pay. ' : 'Asking price — offers considered. ') : l.price_type === 'fixed' ? 'Fixed price. ' : ''}
               Prices exclude VAT, delivery and installation unless stated.
             </span>
             <div className="grid2 small" style={{ gap: 10 }}>
