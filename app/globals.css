@@ -138,6 +138,14 @@ table.data td { padding: 12px 8px; border-bottom: 1px solid #F0F2F4; vertical-al
 .admin-nav { flex: 1 1 230px; background: var(--navy); padding: 20px 14px; display: flex; flex-direction: column; gap: 4px; }
 .admin-nav a { text-decoration: none; color: #C9D5DF; padding: 11px 12px; border-radius: 8px; font-size: 14px; }
 .admin-nav a.on, .admin-nav a:hover { color: #fff; background: rgba(255,255,255,.12); }
+.admin-nav .nav-group { display: flex; flex-direction: column; gap: 2px; }
+.admin-nav .nav-folder { display: flex; align-items: center; gap: 8px; width: 100%; background: none; border: 0; color: #fff; font: inherit; font-size: 13px; font-weight: 700; letter-spacing: .02em; padding: 11px 12px; border-radius: 8px; cursor: pointer; text-align: left; margin-top: 4px; }
+.admin-nav .nav-folder:hover { background: rgba(255,255,255,.08); }
+.admin-nav .nav-folder:focus-visible { outline: 2px solid #F5A27A; outline-offset: 1px; }
+.admin-nav .nav-folder.has-active { color: #F5A27A; }
+.admin-nav .nav-count { margin-left: auto; font-size: 11px; font-weight: 600; color: #8FA3B3; }
+.admin-nav .nav-items { display: flex; flex-direction: column; gap: 2px; margin-left: 15px; padding-left: 10px; border-left: 1px solid rgba(255,255,255,.14); }
+.admin-nav .nav-items a { padding: 9px 12px; }
 .admin-main { flex: 999 1 560px; min-width: 0; padding: 28px 28px 48px; display: flex; flex-direction: column; gap: 20px; }
 .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; }
 .kpi { background: #fff; border-radius: 12px; padding: 16px 18px; display: flex; flex-direction: column; gap: 4px; }
