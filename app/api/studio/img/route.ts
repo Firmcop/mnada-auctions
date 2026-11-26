@@ -13,8 +13,9 @@ export async function GET(request: NextRequest) {
   try { url = new URL(raw ?? ''); } catch { return new NextResponse('Bad url', { status: 400 }); }
   const hosts = allowed();
   if (url.protocol !== 'https:' || !hosts.has(url.host)) return new NextResponse('Host not allowed', { status: 403 });
-  const res = await fetch(url, { headers: { 'User-Agent': 'MnadaStudio/1.0 (https://mnada-auctions.vercel.app)' }, redirect: 'follow', cache: 'force-cache' });
-  if (!res.ok || !hosts.has(new URL(res.url).host)) return new NextResponse('Not found', { status: 404 });
+  const res = await fetch(url, { headers: { 'User-Agent': 'MnadaStudio/1.0 (https://mnada-auctions.vercel.app; studio@mnada)', Accept: 'image/*' }, redirect: 'follow' });
+  if (!res.ok) return new NextResponse(`Upstream ${res.status}`, { status: 502 });
+  if (!hosts.has(new URL(res.url).host)) return new NextResponse(`Redirected off allowed hosts: ${new URL(res.url).host}`, { status: 403 });
   const type = res.headers.get('content-type') ?? '';
   if (!type.startsWith('image/')) return new NextResponse('Not an image', { status: 415 });
   const len = Number(res.headers.get('content-length') ?? 0);
