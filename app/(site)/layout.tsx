@@ -90,6 +90,7 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
             <Link href="/sell">Request a valuation</Link>
             <Link href="/listing-help">Listing Help</Link>
             <Link href="/storage">Storage &amp; viewing</Link>
+            <Link href="/campus">Students: earn with Mnada</Link>
             <Link href="/account/seller">Seller account</Link>
             <Link href="/account/auctioneer">For auctioneers</Link>
           </div>

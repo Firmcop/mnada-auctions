@@ -44,6 +44,12 @@ export default function TermsPage() {
 
       <h2>10. Changes</h2>
       <p>We may update these terms. The version accepted with each bid is recorded and applies to that bid.</p>
+
+      <h2 id="campus">11. Mnada Campus (students)</h2>
+      <p>11.1 Mnada Campus members are independent introducers, not employees, agents or auctioneers of Mnada. Members must be 18 or over and hold a valid student ID. They must not conduct auctions, take possession of goods, receive money from buyers or sellers, make promises about price or condition, or present themselves as auctioneers or as acting for Mnada beyond introducing people to the platform.</p>
+      <p>11.2 A member may submit a seller lead only after the owner has agreed to be contacted by Mnada. Members must not collect or share personal data without consent, and must not use bought, scraped or cold-call lists.</p>
+      <p>11.3 Earnings are recorded only when the referred buyer’s invoice is paid, and become payable after collection. Earnings are cancelled if the sale is cancelled or refunded, and may be withheld for self-referral, referrals within the member’s household, duplicate accounts or any misrepresentation. Where two members introduce the same seller, the first lead received applies.</p>
+      <p>11.4 Rates are shown on the Mnada Campus page and may change for future earnings. Payouts are made by M-Pesa above the stated minimum, after withholding tax required by law; a KRA PIN is required. Mnada may suspend or close a member account for breach of these terms.</p>
     </article>
   );
 }

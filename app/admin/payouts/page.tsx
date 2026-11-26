@@ -14,7 +14,7 @@ export default async function AdminPayouts() {
     supabase.from('auction_auctioneers').select('id, name'),
   ]);
   const settlements = (st ?? []) as (Settlement & { auction_lots: { lot_no: number; title: string } | null })[];
-  const sellerIds = Array.from(new Set([...settlements.map((s) => s.seller_id), ...((po ?? []) as Payout[]).map((p) => p.seller_id)].filter(Boolean))) as string[];
+  const sellerIds = Array.from(new Set([...settlements.map((s) => s.seller_id), ...((po ?? []) as Payout[]).map((p) => p.seller_id), ...((po ?? []) as (Payout & { campus_member_id: string | null })[]).map((p) => p.campus_member_id)].filter(Boolean))) as string[];
   const { data: sellers } = sellerIds.length ? await supabase.from('auction_profiles').select('id, full_name, business_name').in('id', sellerIds) : { data: [] };
   const names: Record<string, string> = {};
   (sellers ?? []).forEach((s) => { names[s.id] = s.business_name || s.full_name; });

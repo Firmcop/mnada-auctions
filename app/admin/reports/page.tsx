@@ -13,7 +13,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
   const since = new Date(`${year}-01-01T00:00:00+03:00`).toISOString();
   const until = new Date(`${year + 1}-01-01T00:00:00+03:00`).toISOString();
   const supabase = await createClient();
-  const [{ lines }, { data: exp }, { data: auctions }, { data: lots }, { data: jobs }, { data: notes }, { data: allExp }] = await Promise.all([
+  const [{ lines }, { data: expRows }, { data: auctions }, { data: lots }, { data: jobs }, { data: notes }, { data: allExp }] = await Promise.all([
     incomeLines(supabase, since, until),
     supabase.from('auction_expenses').select('spent_on, category, amount_kes, vat_kes').gte('spent_on', `${year}-01-01`).lt('spent_on', `${year + 1}-01-01`),
     supabase.from('auction_auctions').select('id, title, status, first_close_at, auctioneer_id').neq('status', 'draft').order('first_close_at', { ascending: false }).limit(100),
@@ -22,6 +22,12 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
     supabase.from('auction_help_notes').select('request_id, minutes, km'),
     supabase.from('auction_expenses').select('auction_id, help_request_id, amount_kes, vat_kes'),
   ]);
+  // student payouts (Mnada Campus) count as a cost in the month they are paid, before withholding tax
+  const { data: campusPaid } = await supabase.from('auction_payouts').select('paid_at, gross_kes, amount_kes').eq('payee_kind', 'student').eq('status', 'paid').gte('paid_at', since).lt('paid_at', until);
+  const exp = [
+    ...(expRows ?? []),
+    ...(campusPaid ?? []).map((p) => ({ spent_on: new Date(new Date(p.paid_at!).getTime() + 3 * 3600 * 1000).toISOString().slice(0, 10), category: 'Mnada Campus payouts', amount_kes: Number(p.gross_kes ?? p.amount_kes), vat_kes: 0 })),
+  ];
   // whole-life income per auction / job (not limited to the year)
   const { lines: allLines } = await incomeLines(supabase, '2000-01-01T00:00:00Z');
 

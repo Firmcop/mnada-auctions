@@ -16,7 +16,8 @@ export default function PayoutsAdmin({ settings, settlements, payouts, names }: 
   const [filter, setFilter] = useState<Settlement['status'] | 'all'>('released');
   const [refs, setRefs] = useState<Record<string, string>>({});
   const [rule, setRule] = useState(settings?.release_rule ?? 'collection');
-  const payee = (s: { seller_id: string | null; auctioneer_id: string | null; payee_kind: string }) => names[(s.payee_kind === 'seller' ? s.seller_id : s.auctioneer_id) ?? ''] ?? '—';
+  const payee = (s: { seller_id: string | null; auctioneer_id: string | null; payee_kind: string; campus_member_id?: string | null }) =>
+    names[(s.payee_kind === 'seller' ? s.seller_id : s.payee_kind === 'student' ? s.campus_member_id : s.auctioneer_id) ?? ''] ?? '—';
   async function run(p: PromiseLike<{ error: { message: string } | null; data?: unknown }>, ok: string) {
     const { error, data } = await p;
     setMsg(error ? { ok: false, text: error.message } : { ok: true, text: typeof data === 'number' ? ok.replace('{n}', String(data)) : ok });

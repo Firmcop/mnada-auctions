@@ -5,7 +5,7 @@ export type Settlement = {
   release_at: string | null; released_at: string | null; payout_id: string | null; created_at: string;
 };
 export type Payout = {
-  id: string; reference: string; payee_kind: 'seller' | 'auctioneer'; seller_id: string | null; auctioneer_id: string | null; amount_kes: number;
+  id: string; reference: string; payee_kind: 'seller' | 'auctioneer' | 'student'; campus_member_id?: string | null; seller_id: string | null; auctioneer_id: string | null; amount_kes: number;
   method: string | null; details: string | null; status: 'pending' | 'paid' | 'cancelled'; payment_ref: string | null; provider: string; created_at: string; paid_at: string | null;
 };
 export const SETTLE_LABEL: Record<Settlement['status'], [string, string]> = {

@@ -13,13 +13,15 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
   const days = PERIODS.find((x) => x[0] === p)?.[2] ?? 30;
   const since = new Date(Date.now() - days * 86400000).toISOString();
   const supabase = await createClient();
-  const [{ lines, aiCost }, { data: open }, { data: held }, { data: exp }] = await Promise.all([
+  const [{ lines, aiCost }, { data: open }, { data: held }, { data: exp }, { data: campus }] = await Promise.all([
     incomeLines(supabase, since),
     supabase.from('auction_invoices').select('total, paid').in('status', ['unpaid', 'part']),
     supabase.from('auction_settlements').select('net_kes, status').in('status', ['held', 'released']),
     supabase.from('auction_expenses').select('amount_kes, vat_kes').gte('spent_on', since.slice(0, 10)),
+    supabase.from('auction_payouts').select('gross_kes, amount_kes').eq('payee_kind', 'student').eq('status', 'paid').gte('paid_at', since),
   ]);
-  const expenses = (exp ?? []).reduce((s, x) => s + Number(x.amount_kes) - Number(x.vat_kes), 0);
+  const expenses = (exp ?? []).reduce((s, x) => s + Number(x.amount_kes) - Number(x.vat_kes), 0)
+    + (campus ?? []).reduce((s, x) => s + Number(x.gross_kes ?? x.amount_kes), 0);
   const streams = new Map<string, number>();
   for (const l of lines) streams.set(l.stream, (streams.get(l.stream) ?? 0) + l.amount);
   const vatOut = streams.get('VAT collected (output)') ?? 0;

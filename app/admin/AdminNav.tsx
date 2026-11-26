@@ -21,6 +21,7 @@ const GROUPS: Group[] = [
     ['/admin/bidders', 'Bidders'],
     ['/admin/sellers', 'Sellers'],
     ['/admin/auctioneers', 'Auctioneers'],
+    ['/admin/campus', 'Mnada Campus'],
     ['/admin/consignments', 'Items sent for auction'],
     ['/admin/valuations', 'Valuation requests'],
   ] },

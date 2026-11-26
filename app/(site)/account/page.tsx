@@ -51,6 +51,7 @@ export default async function AccountPage() {
           <Link href="/account/storage" className="btn btn-outline btn-sm">Storage</Link>
           <Link href="/account/auctioneer" className="btn btn-outline btn-sm">Auctioneer firm</Link>
           <Link href="/account/ai" className="btn btn-outline btn-sm">AI tools</Link>
+          {!profile.is_admin && <Link href="/campus/dashboard" className="btn btn-outline btn-sm">Mnada Campus</Link>}
         </nav>
       )}
 

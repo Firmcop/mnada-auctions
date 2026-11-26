@@ -1,6 +1,6 @@
 'use client';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
 export default function RegisterPage() {
@@ -8,6 +8,12 @@ export default function RegisterPage() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [done, setDone] = useState<'confirm' | 'in' | null>(null);
+  const [ref, setRef] = useState('');
+  useEffect(() => {
+    const fromUrl = new URLSearchParams(window.location.search).get('ref');
+    const fromCookie = document.cookie.split('; ').find((c) => c.startsWith('mnada_ref='))?.split('=')[1];
+    setRef(decodeURIComponent(fromUrl || fromCookie || '').toUpperCase().replace(/[^A-Z0-9-]/g, '').slice(0, 24));
+  }, []);
 
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -32,6 +38,7 @@ export default function RegisterPage() {
           company_name: type === 'company' ? get('company_name') : '',
           id_number: get('id_number'),
           kra_pin: get('kra_pin').toUpperCase(),
+          ref_code: get('ref_code').toUpperCase(),
         },
       },
     });
@@ -91,6 +98,9 @@ export default function RegisterPage() {
             <label className="field">{type === 'company' ? 'Company registration no.' : 'National ID or passport no.'}<input className="input" name="id_number" required /></label>
             <label className="field">KRA PIN<input className="input" name="kra_pin" placeholder="A000000000X" required={type === 'company'} /></label>
           </div>
+          <label className="field">Referral code <span className="muted small">(optional — from a Mnada Campus student)</span>
+            <input className="input" name="ref_code" value={ref} onChange={(e) => setRef(e.target.value.toUpperCase())} placeholder="e.g. KEVIN-JKUAT" />
+          </label>
           <label className="field">Password<input className="input" name="password" type="password" minLength={8} required autoComplete="new-password" /></label>
           <label className="check"><input type="checkbox" name="terms" /><span>I accept the <a href="/terms" target="_blank" rel="noreferrer">terms of sale</a> and <a href="/privacy" target="_blank" rel="noreferrer">privacy policy</a>.</span></label>
           {err && <div role="alert" className="alert alert-err">{err}</div>}
