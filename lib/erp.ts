@@ -15,6 +15,6 @@ export const STOCK_STATUS: Record<string, [string, string]> = {
 export type StockItem = {
   id: string; ref: string; title: string; description: string | null; category: string | null; quantity: number; condition: string | null;
   yard_location: string | null; owner_kind: 'mnada' | 'seller' | 'other'; owner_id: string | null; owner_name: string | null;
-  help_request_id: string | null; consignment_id: string | null; lot_id: string | null; listing_id: string | null; status: string;
+  help_request_id: string | null; consignment_id: string | null; storage_booking_id?: string | null; lot_id: string | null; listing_id: string | null; status: string;
   photos: string[]; notes: string | null; received_at: string; left_yard_at: string | null;
 };

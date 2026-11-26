@@ -6,7 +6,7 @@ export const VAT_STREAM = 'VAT collected (output)';
 /** Mnada's income lines (excl. money held for sellers/auctioneers), on payments received in [since, until). */
 export async function incomeLines(supabase: SupabaseClient, since: string, until?: string): Promise<{ lines: Line[]; aiCost: number }> {
   const u = until ?? new Date(Date.now() + 86400000).toISOString();
-  const [{ data: inv }, { data: st }, { data: firmFees }, { data: help }, { data: aiPay }, { data: aiUse }, { data: helpReqs }] = await Promise.all([
+  const [{ data: inv }, { data: st }, { data: firmFees }, { data: help }, { data: aiPay }, { data: aiUse }, { data: helpReqs }, { data: storage }] = await Promise.all([
     supabase.from('auction_invoices').select('id, invoice_no, hammer, premium, extras, vat, paid_at, auction_lots(lot_no, title, seller_id, vat_on_hammer, auction_id, auction_auctions(auctioneer_id))').not('paid_at', 'is', null).gte('paid_at', since).lt('paid_at', u),
     supabase.from('auction_settlements').select('invoice_id, payee_kind, fee_kes, fee_vat_kes, help_deduction_kes, status'),
     supabase.from('auction_auctioneer_fees').select('reference, amount_kes, confirmed_at, auction_id').eq('status', 'paid').gte('confirmed_at', since).lt('confirmed_at', u),
@@ -14,6 +14,7 @@ export async function incomeLines(supabase: SupabaseClient, since: string, until
     supabase.from('auction_ai_payments').select('reference, purpose, amount_kes, confirmed_at').eq('status', 'paid').gte('confirmed_at', since).lt('confirmed_at', u),
     supabase.from('auction_ai_ledger').select('amount_kes, cost_kes, internal, created_at').eq('kind', 'usage').gte('created_at', since).lt('created_at', u),
     supabase.from('auction_help_requests').select('id, quote_subtotal_kes, quote_total_kes').not('quote_total_kes', 'is', null),
+    supabase.from('auction_storage_charges').select('reference, description, amount_kes, vat_kes, confirmed_at').eq('status', 'paid').gte('confirmed_at', since).lt('confirmed_at', u),
   ]);
   // Listing Help receipts include VAT: split them using the job's quote (subtotal / total)
   const helpRatio = (id: string | null | undefined) => {
@@ -53,6 +54,10 @@ export async function incomeLines(supabase: SupabaseClient, since: string, until
     const net = Math.round(Number(h.amount_kes) * helpRatio(h.request_id));
     lines.push({ date: d(h.confirmed_at), stream: 'Listing Help', ref: h.reference, description: `${h.kind} payment`, amount: net, helpId: h.request_id });
     if (Number(h.amount_kes) - net) lines.push({ date: d(h.confirmed_at), stream: VAT_STREAM, ref: h.reference, description: `VAT on Listing Help ${h.kind}`, amount: Number(h.amount_kes) - net, helpId: h.request_id });
+  }
+  for (const c of storage ?? []) {
+    lines.push({ date: d(c.confirmed_at), stream: 'Storage', ref: c.reference, description: c.description, amount: Number(c.amount_kes) });
+    if (Number(c.vat_kes)) lines.push({ date: d(c.confirmed_at), stream: VAT_STREAM, ref: c.reference, description: `VAT · ${c.description}`, amount: Number(c.vat_kes) });
   }
   for (const a of aiPay ?? []) if (a.purpose === 'activation') lines.push({ date: d(a.confirmed_at), stream: 'AI tools', ref: a.reference, description: 'Activation', amount: Number(a.amount_kes) });
   const aiUsage = (aiUse ?? []).filter((x) => !x.internal).reduce((s, x) => s + -Number(x.amount_kes), 0);

@@ -9,6 +9,7 @@ const ITEMS = [
   ['/seller/enquiries', 'Enquiries & offers'],
   ['/seller/sales', 'Sales & payouts'],
   ['/account/listing-help', 'Listing Help'],
+  ['/account/storage', 'Storage at the yard'],
 ];
 
 export default function SellerNav() {

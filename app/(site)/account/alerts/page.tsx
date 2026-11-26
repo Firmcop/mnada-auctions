@@ -32,7 +32,7 @@ export default async function AlertsPage() {
       <div style={{ borderTop: rows.length ? '1px solid var(--line)' : 0 }}>
         {rows.map((r) => {
           const [label, cls] = ICON[r.kind] ?? ['Alert', 'pill-grey'];
-          const href = r.kind === 'won' ? '/account' : r.help_request_id ? `/account/listing-help/${r.help_request_id}` : r.lot_id ? `/lots/${r.lot_id}` : '/account';
+          const href = r.kind === 'won' ? '/account' : r.storage_booking_id ? `/account/storage/${r.storage_booking_id}` : r.help_request_id ? `/account/listing-help/${r.help_request_id}` : r.lot_id ? `/lots/${r.lot_id}` : '/account';
           return (
             <Link key={r.id} href={href} className="list-row" style={{ textDecoration: 'none', color: 'inherit', background: r.read_at ? '#fff' : '#FFF8F4', paddingLeft: 10, paddingRight: 10 }}>
               <span className={`pill ${cls}`}>{label}</span>

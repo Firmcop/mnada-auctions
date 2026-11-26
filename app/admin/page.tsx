@@ -18,7 +18,7 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
     supabase.from('auction_valuations').select('id', { count: 'exact', head: true }).gte('created_at', new Date(Date.now() - 7 * 86400000).toISOString()),
     supabase.from('auction_bids').select('amount, created_at, is_auto, auction_lots(lot_no, title)').order('created_at', { ascending: false }).limit(8),
   ]);
-  const [{ count: newEnquiries }, { count: sellerApps }, { count: listingReviews }, { count: consignments }, { count: aiPayments }, { count: helpJobs }, { count: firmApps }, { count: firmReviews }, { count: firmFees }, { count: toBatch }, { count: toPay }] = await Promise.all([
+  const [{ count: newEnquiries }, { count: sellerApps }, { count: listingReviews }, { count: consignments }, { count: aiPayments }, { count: helpJobs }, { count: firmApps }, { count: firmReviews }, { count: firmFees }, { count: toBatch }, { count: toPay }, { count: storageReq }] = await Promise.all([
     supabase.from('auction_enquiries').select('id', { count: 'exact', head: true }).eq('status', 'new'),
     supabase.from('auction_profiles').select('id', { count: 'exact', head: true }).eq('seller_status', 'pending'),
     supabase.from('auction_listings').select('id', { count: 'exact', head: true }).eq('review_status', 'pending'),
@@ -30,6 +30,7 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
     supabase.from('auction_auctioneer_fees').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
     supabase.from('auction_settlements').select('id', { count: 'exact', head: true }).eq('status', 'released').is('payout_id', null),
     supabase.from('auction_payouts').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+    supabase.from('auction_storage_bookings').select('id', { count: 'exact', head: true }).in('status', ['requested', 'accepted']),
   ]);
   const todo: [number, string, string][] = ([
     [sellerApps ?? 0, 'seller applications', '/admin/sellers'],
@@ -41,6 +42,7 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
     [firmReviews ?? 0, 'auctioneer auctions to approve', '/admin/auctioneers'],
     [firmFees ?? 0, 'auctioneer listing fees to confirm', '/admin/auctioneers'],
     [(toBatch ?? 0) + (toPay ?? 0), 'seller/auctioneer payouts to make', '/admin/payouts'],
+    [storageReq ?? 0, 'storage requests to quote or start', '/admin/storage'],
   ] as [number, string, string][]).filter(([n, , href]) => n > 0 && canArea(role, areaFor(href)));
   const lots = openLots.data ?? [];
   const owed = (unpaid.data ?? []).reduce((s, i) => s + Number(i.total) - Number(i.paid), 0);

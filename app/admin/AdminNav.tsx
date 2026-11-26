@@ -26,6 +26,7 @@ const GROUPS: Group[] = [
   { key: 'ops', label: 'Operations', items: [
     ['/admin/help', 'Listing Help jobs'],
     ['/admin/stock', 'Yard stock'],
+    ['/admin/storage', 'Storage'],
   ] },
   { key: 'finance', label: 'Finance', items: [
     ['/admin/finance', 'Overview'],

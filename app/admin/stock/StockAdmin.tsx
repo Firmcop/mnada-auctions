@@ -10,7 +10,7 @@ type Opt = { id: string; label: string };
 type Seller = { id: string; full_name: string; business_name: string | null };
 type Job = { id: string; reference: string; contact_name: string };
 
-export default function StockAdmin({ items, sellers, jobs, lots, listings }: { items: StockItem[]; sellers: Seller[]; jobs: Job[]; lots: Opt[]; listings: Opt[] }) {
+export default function StockAdmin({ items, sellers, jobs, lots, listings, storage }: { items: StockItem[]; sellers: Seller[]; jobs: Job[]; lots: Opt[]; listings: Opt[]; storage: { id: string; reference: string; user_id: string }[] }) {
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
   const [filter, setFilter] = useState<'yard' | 'all' | string>('yard');
@@ -48,7 +48,7 @@ export default function StockAdmin({ items, sellers, jobs, lots, listings }: { i
       title: g('title'), description: g('description') || null, category: g('category') || null, quantity: Number(g('quantity') || 1),
       condition: g('condition') || null, yard_location: g('yard_location') || null, owner_kind: ownerKind,
       owner_id: ownerKind === 'seller' ? g('owner_id') || null : null, owner_name: ownerKind === 'other' ? g('owner_name') || null : null,
-      help_request_id: g('help_request_id') || null, photos, notes: g('notes') || null, received_by: user?.id,
+      help_request_id: g('help_request_id') || null, storage_booking_id: g('storage_booking_id') || null, photos, notes: g('notes') || null, received_by: user?.id,
     }), 'Item booked in.');
     if (ok) { form.reset(); setPhotos([]); setOwnerKind('mnada'); }
   }
@@ -81,6 +81,7 @@ export default function StockAdmin({ items, sellers, jobs, lots, listings }: { i
             </label>
             {ownerKind === 'seller' && <label className="field">Seller<select className="input" name="owner_id" required>{sellers.map((s) => <option key={s.id} value={s.id}>{s.business_name || s.full_name}</option>)}</select></label>}
             {ownerKind === 'other' && <label className="field">Owner name &amp; phone<input className="input" name="owner_name" required /></label>}
+            <label className="field">Storage booking (optional)<select className="input" name="storage_booking_id" defaultValue=""><option value="">—</option>{storage.map((s) => <option key={s.id} value={s.id}>{s.reference} · {sellers.find((x) => x.id === s.user_id)?.business_name || sellers.find((x) => x.id === s.user_id)?.full_name || 'customer'}</option>)}</select></label>
             <label className="field">Listing Help job (optional)<select className="input" name="help_request_id" defaultValue=""><option value="">—</option>{jobs.map((j) => <option key={j.id} value={j.id}>{j.reference} · {j.contact_name}</option>)}</select></label>
           </div>
           <label className="field">Description<textarea className="input" name="description" rows={2} /></label>
