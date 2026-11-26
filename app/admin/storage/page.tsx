@@ -4,16 +4,18 @@ import { kes } from '@/lib/format';
 import { canArea } from '@/lib/staff';
 import type { StorageBooking, StorageCharge, StorageSettings, StorageSize } from '@/lib/storage';
 import StorageAdmin from './StorageAdmin';
+import VisitList from './VisitList';
 
 export default async function AdminStorage() {
   const role = await requireArea('people');
   const supabase = await createClient();
-  const [{ data: settings }, { data: sizes }, { data: bookings }, { data: charges }, { data: stock }] = await Promise.all([
+  const [{ data: settings }, { data: sizes }, { data: bookings }, { data: charges }, { data: stock }, { data: visits }] = await Promise.all([
     supabase.from('auction_storage_settings').select('*').eq('id', 1).single(),
     supabase.from('auction_storage_sizes').select('*').order('sort'),
     supabase.from('auction_storage_bookings').select('*').order('created_at', { ascending: false }).limit(300),
     supabase.from('auction_storage_charges').select('*').neq('status', 'cancelled').order('created_at', { ascending: false }).limit(1000),
     supabase.from('auction_stock').select('id, ref, title, status, storage_booking_id').not('storage_booking_id', 'is', null),
+    supabase.from('auction_storage_visits').select('*').in('status', ['requested', 'confirmed']).gte('visit_date', new Date(Date.now() - 86400000).toISOString().slice(0, 10)).order('visit_date'),
   ]);
   const b = (bookings ?? []) as StorageBooking[];
   const ids = Array.from(new Set(b.map((x) => x.user_id)));
@@ -31,7 +33,9 @@ export default async function AdminStorage() {
         <div className="kpi"><span className="eyebrow">Monthly storage income</span><b>USD {active.reduce((s, x) => s + Number(x.monthly_usd ?? 0), 0).toLocaleString('en-US')}</b></div>
         <div className="kpi"><span className="eyebrow">Unpaid bills</span><b>KES {kes(c.filter((x) => x.status === 'pending').reduce((s, x) => s + Number(x.total_kes), 0))}</b></div>
         <div className="kpi"><span className="eyebrow">New requests</span><b>{b.filter((x) => x.status === 'requested').length}</b></div>
+        <div className="kpi"><span className="eyebrow">Site visits coming up</span><b>{(visits ?? []).length}</b></div>
       </div>
+      <VisitList visits={visits ?? []} />
       <StorageAdmin settings={settings as StorageSettings} sizes={(sizes ?? []) as StorageSize[]} bookings={b} charges={c} people={people ?? []}
         stock={stock ?? []} canFinance={canArea(role, 'finance')} canOps={canArea(role, 'operations')} />
     </>
