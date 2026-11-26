@@ -65,6 +65,12 @@ export type Auction = {
   seo_title?: string | null;
   seo_description?: string | null;
   created_at: string;
+  auctioneer_id?: string | null;
+  publish_state?: 'awaiting_payment' | 'awaiting_review' | 'rejected' | null;
+  publish_note?: string | null;
+  terms_text?: string | null;
+  success_fee_pct?: number | null;
+  listing_fee_kes?: number | null;
 };
 
 export type Lot = {

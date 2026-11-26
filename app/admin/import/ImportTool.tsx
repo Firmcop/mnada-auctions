@@ -14,9 +14,9 @@ import {
 type AuctionOpt = { id: string; title: string; first_close_at: string | null };
 type Checked = { idx: number; key: string; row: RawRow; errors: string[]; warnings: string[]; photos: File[]; exists: boolean; title: string; category: string | null; sub: string | null; priceText: string };
 
-export default function ImportTool({ auctions }: { auctions: AuctionOpt[] }) {
+export default function ImportTool({ auctions, mode = 'admin', lotFolder = 'lots', basePath = '/admin' }: { auctions: AuctionOpt[]; mode?: 'admin' | 'auctioneer'; lotFolder?: string; basePath?: string }) {
   const supabase = useMemo(() => createClient(), []);
-  const [target, setTarget] = useState<Target>('listings');
+  const [target, setTarget] = useState<Target>(mode === 'auctioneer' ? 'lots' : 'listings');
   const [auctionId, setAuctionId] = useState(auctions[0]?.id ?? '');
   const [rows, setRows] = useState<RawRow[]>([]);
   const [sheetName, setSheetName] = useState('');
@@ -190,7 +190,7 @@ export default function ImportTool({ auctions }: { auctions: AuctionOpt[] }) {
           const { data: found } = await supabase.from('auction_lots').select('id, bid_count, closes_at').eq('auction_id', auctionId).eq('lot_no', lotNo).maybeSingle();
           const id = found?.id ?? crypto.randomUUID();
           const uploaded: string[] = [];
-          for (const f of c.photos) { const u = await uploadPhoto(supabase, `lots/${id}`, f); if (u.path) uploaded.push(u.path); }
+          for (const f of c.photos) { const u = await uploadPhoto(supabase, `${lotFolder}/${id}`, f); if (u.path) uploaded.push(u.path); }
           const closes: string = parseEat(r.closes_at) || found?.closes_at || new Date(new Date(lastClose).getTime() + 60000).toISOString();
           lastClose = closes;
           const locked = (found?.bid_count ?? 0) > 0;
@@ -225,7 +225,7 @@ export default function ImportTool({ auctions }: { auctions: AuctionOpt[] }) {
       <section className="panel stack" style={{ gap: 14 }}>
         <h3>1. What are you importing?</h3>
         <div className="row">
-          {(['listings', 'lots'] as Target[]).map((t) => (
+          {((mode === 'auctioneer' ? ['lots'] : ['listings', 'lots']) as Target[]).map((t) => (
             <label key={t} className="check" style={{ border: `2px solid ${target === t ? 'var(--accent)' : 'var(--line)'}`, borderRadius: 10, padding: '10px 14px' }}>
               <input type="radio" name="target" checked={target === t} onChange={() => { setTarget(t); setRows([]); setProgress(null); loadExisting(t); }} />
               {t === 'listings' ? 'Direct-sale products' : 'Auction lots'}
@@ -306,7 +306,7 @@ export default function ImportTool({ auctions }: { auctions: AuctionOpt[] }) {
               <b>{progress.done === progress.total && !busy ? 'Import finished' : 'Importing…'} ({progress.done}/{progress.total})</b>
               {progress.log.map((l, i) => <span key={i} style={{ color: l.startsWith('✗') ? 'var(--danger)' : undefined }}>{l}</span>)}
               {!busy && progress.done === progress.total && (
-                <Link href={target === 'listings' ? '/admin/listings' : `/admin/auctions/${auctionId}`} className="btn btn-outline btn-sm" style={{ alignSelf: 'flex-start', marginTop: 6 }}>
+                <Link href={target === 'listings' ? `${basePath}/listings` : `${basePath}/auctions/${auctionId}`} className="btn btn-outline btn-sm" style={{ alignSelf: 'flex-start', marginTop: 6 }}>
                   Review imported {target === 'listings' ? 'products' : 'lots'}
                 </Link>
               )}

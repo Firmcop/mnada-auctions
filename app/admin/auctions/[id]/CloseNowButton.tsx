@@ -11,7 +11,7 @@ export default function CloseNowButton() {
     <span className="row small" style={{ gap: 8 }}>
       {text && <span className="muted">{text}</span>}
       <button type="button" className="btn btn-outline btn-sm" onClick={async () => {
-        const { data, error } = await createClient().rpc('auction_close_due_lots');
+        const { data, error } = await createClient().rpc('auction_admin_close_due');
         setText(error ? error.message : `${data} lot(s) closed`);
         router.refresh();
       }}>Process ended lots now</button>

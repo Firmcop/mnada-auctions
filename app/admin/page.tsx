@@ -14,13 +14,16 @@ export default async function AdminHome() {
     supabase.from('auction_valuations').select('id', { count: 'exact', head: true }).gte('created_at', new Date(Date.now() - 7 * 86400000).toISOString()),
     supabase.from('auction_bids').select('amount, created_at, is_auto, auction_lots(lot_no, title)').order('created_at', { ascending: false }).limit(8),
   ]);
-  const [{ count: newEnquiries }, { count: sellerApps }, { count: listingReviews }, { count: consignments }, { count: aiPayments }, { count: helpJobs }] = await Promise.all([
+  const [{ count: newEnquiries }, { count: sellerApps }, { count: listingReviews }, { count: consignments }, { count: aiPayments }, { count: helpJobs }, { count: firmApps }, { count: firmReviews }, { count: firmFees }] = await Promise.all([
     supabase.from('auction_enquiries').select('id', { count: 'exact', head: true }).eq('status', 'new'),
     supabase.from('auction_profiles').select('id', { count: 'exact', head: true }).eq('seller_status', 'pending'),
     supabase.from('auction_listings').select('id', { count: 'exact', head: true }).eq('review_status', 'pending'),
     supabase.from('auction_consignments').select('id', { count: 'exact', head: true }).eq('status', 'submitted'),
     supabase.from('auction_ai_payments').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
     supabase.from('auction_help_requests').select('id', { count: 'exact', head: true }).in('status', ['requested', 'accepted']),
+    supabase.from('auction_auctioneers').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+    supabase.from('auction_auctions').select('id', { count: 'exact', head: true }).eq('publish_state', 'awaiting_review'),
+    supabase.from('auction_auctioneer_fees').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
   ]);
   const todo: [number, string, string][] = ([
     [sellerApps ?? 0, 'seller applications', '/admin/sellers'],
@@ -28,6 +31,9 @@ export default async function AdminHome() {
     [consignments ?? 0, 'items sent for auction', '/admin/consignments'],
     [aiPayments ?? 0, 'AI payments to confirm', '/admin/ai'],
     [helpJobs ?? 0, 'Listing Help jobs to quote or schedule', '/admin/help'],
+    [firmApps ?? 0, 'auctioneer applications', '/admin/auctioneers'],
+    [firmReviews ?? 0, 'auctioneer auctions to approve', '/admin/auctioneers'],
+    [firmFees ?? 0, 'auctioneer listing fees to confirm', '/admin/auctioneers'],
   ] as [number, string, string][]).filter(([n]) => n > 0);
   const lots = openLots.data ?? [];
   const owed = (unpaid.data ?? []).reduce((s, i) => s + Number(i.total) - Number(i.paid), 0);

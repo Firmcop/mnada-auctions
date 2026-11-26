@@ -16,9 +16,13 @@ type Props = {
   reserve?: number | null;
   defaultLotNo: number;
   defaultClose: string | null;
+  basePath?: string;
+  photoFolder?: string;
+  mode?: 'admin' | 'auctioneer';
+  locked?: boolean;
 };
 
-export default function LotForm({ auctionId, auctionTitle, lot, reserve, defaultLotNo, defaultClose }: Props) {
+export default function LotForm({ auctionId, auctionTitle, lot, reserve, defaultLotNo, defaultClose, basePath = '/admin', photoFolder = 'lots', mode = 'admin', locked = false }: Props) {
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
   const lotId = useMemo(() => lot?.id ?? crypto.randomUUID(), [lot]);
@@ -40,7 +44,7 @@ export default function LotForm({ auctionId, auctionTitle, lot, reserve, default
     setUploading(true);
     const added: string[] = [];
     for (const file of files) {
-      const r = await uploadPhoto(supabase, `lots/${lotId}`, file);
+      const r = await uploadPhoto(supabase, `${photoFolder}/${lotId}`, file);
       if (r.error || !r.path) setMsg({ ok: false, text: `Upload failed: ${r.error}` });
       else setPhotos((p) => [...p, r.path as string]);
     }
@@ -66,7 +70,7 @@ export default function LotForm({ auctionId, auctionTitle, lot, reserve, default
     const row = {
       id: lotId,
       auction_id: auctionId,
-      lot_no: Number(g('lot_no')),
+      lot_no: locked && lot ? lot.lot_no : Number(g('lot_no')),
       title,
       category: g('category') || null,
       subcategory: g('subcategory') || null,
@@ -75,12 +79,12 @@ export default function LotForm({ auctionId, auctionTitle, lot, reserve, default
       specs: specs.filter(([k, v]) => k.trim() && v.trim()),
       photos,
       start_bid: startBid,
-      closes_at: eatInputToIso(g('closes_at')),
-      vat_on_hammer: f.get('vat_on_hammer') === 'on',
+      closes_at: locked && lot ? lot.closes_at : eatInputToIso(g('closes_at')),
+      vat_on_hammer: locked && lot ? lot.vat_on_hammer : f.get('vat_on_hammer') === 'on',
       condition_tags: tags,
       seo_title: g('seo_title') || null,
       seo_description: g('seo_description') || null,
-      seller_type: g('seller_type') || 'own',
+      seller_type: mode === 'auctioneer' ? (lot?.seller_type ?? 'commercial') : g('seller_type') || 'own',
       extra_costs: extras.filter((x) => x.label.trim() && Number(x.amount) > 0).map((x) => ({ label: x.label.trim(), amount: Number(x.amount), mandatory: x.mandatory })),
     };
     const reserveVal = g('reserve').replace(/[^0-9]/g, '');
@@ -90,10 +94,10 @@ export default function LotForm({ auctionId, auctionTitle, lot, reserve, default
       ? await supabase.from('auction_lots').update(row).eq('id', lotId)
       : await supabase.from('auction_lots').insert(row);
     if (error) { setBusy(false); setMsg({ ok: false, text: error.message.includes('duplicate') ? 'That lot number is already used in this auction.' : error.message }); return; }
-    const { error: e2 } = await supabase.from('auction_lot_private').upsert({ lot_id: lotId, reserve: reserveVal ? Number(reserveVal) : null });
+    const { error: e2 } = locked ? { error: null } : await supabase.from('auction_lot_private').upsert({ lot_id: lotId, reserve: reserveVal ? Number(reserveVal) : null });
     setBusy(false);
     if (e2) { setMsg({ ok: false, text: e2.message }); return; }
-    if (!lot) { router.replace(`/admin/lots/${lotId}?saved=1`); return; }
+    if (!lot) { router.replace(`${basePath}/lots/${lotId}?saved=1`); return; }
     setMsg({ ok: true, text: 'Saved.' });
     router.refresh();
   }
@@ -110,7 +114,7 @@ export default function LotForm({ auctionId, auctionTitle, lot, reserve, default
       closes_at: new Date(new Date(last?.closes_at ?? lot.closes_at).getTime() + 60000).toISOString(),
     });
     if (error) { setMsg({ ok: false, text: error.message }); return; }
-    router.push(`/admin/lots/${newId}?saved=1`);
+    router.push(`${basePath}/lots/${newId}?saved=1`);
   }
 
   async function remove() {
@@ -118,7 +122,7 @@ export default function LotForm({ auctionId, auctionTitle, lot, reserve, default
     if (!window.confirm('Delete this lot? This cannot be undone.')) return;
     const { error } = await supabase.from('auction_lots').delete().eq('id', lot.id);
     if (error) { setMsg({ ok: false, text: error.message }); return; }
-    router.replace(`/admin/auctions/${auctionId}`);
+    router.replace(`${basePath}/auctions/${auctionId}`);
   }
 
   const checks: [boolean, string][] = [
@@ -136,7 +140,7 @@ export default function LotForm({ auctionId, auctionTitle, lot, reserve, default
           <span className="small muted">Auction: {auctionTitle}</span>
           <label className="field">Lot title<input className="input" value={title} onChange={(e) => setTitle(e.target.value)} required /></label>
           <div className="grid2">
-            <label className="field">Lot number<input className="input" name="lot_no" type="number" min="1" required defaultValue={lot?.lot_no ?? defaultLotNo} /></label>
+            <label className="field">Lot number<input className="input" name="lot_no" type="number" min="1" required disabled={locked} defaultValue={lot?.lot_no ?? defaultLotNo} /></label>
             <label className="field">Category
               <select className="input" name="category" value={category} onChange={(e) => setCategory(e.target.value)}>{CATEGORIES.map((c) => <option key={c}>{c}</option>)}</select>
             </label>
@@ -149,13 +153,13 @@ export default function LotForm({ auctionId, auctionTitle, lot, reserve, default
             <label className="field">Location<input className="input" name="location" defaultValue={lot?.location ?? ''} /></label>
           </div>
           <label className="field">Condition notes<textarea className="input" name="description" rows={4} defaultValue={lot?.description ?? ''} /></label>
-          <div className="grid2">
+          {mode === 'admin' && <div className="grid2">
             <label className="field">Seller
               <select className="input" name="seller_type" defaultValue={lot?.seller_type ?? 'own'}>
                 {Object.entries(SELLER_TYPES).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
               </select>
             </label>
-          </div>
+          </div>}
           <fieldset style={{ border: 0, padding: 0, margin: 0 }} className="stack">
             <legend style={{ fontSize: 14, fontWeight: 600, marginBottom: 8, padding: 0 }}>Condition tags</legend>
             <div className="row" style={{ gap: '8px 18px' }}>
@@ -203,6 +207,7 @@ export default function LotForm({ auctionId, auctionTitle, lot, reserve, default
 
         <section className="panel stack" style={{ gap: 10 }}>
           <h3>Additional costs</h3>
+          {locked && <p className="small muted">The auction is published, so costs, pricing and closing times are locked.</p>}
           <p className="small muted">E.g. loading fee, crane offloading, delivery, assembly. Mandatory costs are added to the winner&apos;s invoice (plus 16% VAT); optional ones are shown as available on request.</p>
           {extras.map((x, i) => (
             <div key={i} className="row" style={{ gap: 8, flexWrap: 'nowrap' }}>
@@ -212,20 +217,20 @@ export default function LotForm({ auctionId, auctionTitle, lot, reserve, default
               <button type="button" className="btn btn-outline" aria-label="Remove cost" onClick={() => setExtras((xs) => xs.filter((_, j) => j !== i))}>✕</button>
             </div>
           ))}
-          <button type="button" className="btn btn-outline btn-sm" style={{ alignSelf: 'flex-start' }} onClick={() => setExtras((xs) => [...xs, { label: '', amount: 0, mandatory: true }])}>+ Add cost</button>
+          {!locked && <button type="button" className="btn btn-outline btn-sm" style={{ alignSelf: 'flex-start' }} onClick={() => setExtras((xs) => [...xs, { label: '', amount: 0, mandatory: true }])}>+ Add cost</button>}
         </section>
 
         <section className="panel stack" style={{ gap: 14 }}>
           <h3>Pricing &amp; closing</h3>
           <div className="grid2">
             <label className="field">Starting bid (KES)
-              <input className="input" inputMode="numeric" value={startBid ? startBid.toLocaleString('en-US') : ''} disabled={hasBids}
+              <input className="input" inputMode="numeric" value={startBid ? startBid.toLocaleString('en-US') : ''} disabled={hasBids || locked}
                 onChange={(e) => setStartBid(parseInt(e.target.value.replace(/[^0-9]/g, ''), 10) || 0)} required />
             </label>
-            <label className="field">Reserve, hidden (KES, optional)<input className="input" name="reserve" inputMode="numeric" defaultValue={reserve ? kes(reserve) : ''} placeholder="No reserve" /></label>
-            <label className="field">Closes (Nairobi time)<input className="input" type="datetime-local" name="closes_at" required defaultValue={isoToEatInput(lot?.closes_at ?? defaultClose)} /></label>
+            <label className="field">Reserve, hidden (KES, optional)<input className="input" name="reserve" inputMode="numeric" disabled={locked} defaultValue={reserve ? kes(reserve) : ''} placeholder="No reserve" /></label>
+            <label className="field">Closes (Nairobi time)<input className="input" type="datetime-local" name="closes_at" required disabled={locked} defaultValue={isoToEatInput(lot?.closes_at ?? defaultClose)} /></label>
           </div>
-          <label className="check"><input type="checkbox" name="vat_on_hammer" defaultChecked={lot?.vat_on_hammer ?? true} />VAT applies to the hammer price (seller is VAT-registered)</label>
+          <label className="check"><input type="checkbox" name="vat_on_hammer" disabled={locked} defaultChecked={lot?.vat_on_hammer ?? true} />VAT applies to the hammer price (seller is VAT-registered)</label>
           {hasBids && <p className="small muted">This lot has bids, so the starting bid can no longer change.</p>}
         </section>
         <SeoFields
@@ -244,12 +249,12 @@ export default function LotForm({ auctionId, auctionTitle, lot, reserve, default
               <span>{t}</span>
             </div>
           ))}
-          <p className="small muted">Lots appear on the site when the auction&apos;s status is Live.</p>
+          <p className="small muted">{mode === 'auctioneer' ? 'Lots appear on the site once the auction is published.' : <>Lots appear on the site when the auction&apos;s status is Live.</>}</p>
         </div>
         {msg && <div role="status" className={`alert ${msg.ok ? 'alert-ok' : 'alert-err'}`}>{msg.text}</div>}
         <button className="btn btn-primary" type="submit" disabled={busy || uploading}>{busy ? 'Saving…' : lot ? 'Save lot' : 'Create lot'}</button>
-        {lot && <button type="button" className="btn btn-outline" onClick={duplicate}>Duplicate as next lot</button>}
-        {lot && !hasBids && <button type="button" className="btn btn-outline" style={{ color: 'var(--danger)' }} onClick={remove}>Delete lot</button>}
+        {lot && !locked && <button type="button" className="btn btn-outline" onClick={duplicate}>Duplicate as next lot</button>}
+        {lot && !hasBids && !locked && <button type="button" className="btn btn-outline" style={{ color: 'var(--danger)' }} onClick={remove}>Delete lot</button>}
       </aside>
     </form>
   );

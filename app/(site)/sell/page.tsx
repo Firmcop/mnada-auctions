@@ -33,7 +33,7 @@ export default function SellPage() {
             <a href="/listing-help" className="btn" style={{ border: '1.5px solid #fff', color: '#fff' }}>Get Listing Help</a>
             <a href="#form" className="btn" style={{ border: '1.5px solid #fff', color: '#fff' }}>Request a valuation</a>
           </div>
-          <span className="small" style={{ color: '#AFC0CD' }}>Seller account: list items yourself for direct sale or send them for auction, and follow enquiries and sales online. Valuation: we do it for you.</span>
+          <span className="small" style={{ color: '#AFC0CD' }}>Licensed auctioneer? <a href="/account/auctioneer" style={{ color: '#fff' }}>Run your own auctions on Mnada</a>. Seller account: list items yourself for direct sale or send them for auction, and follow enquiries and sales online. Valuation: we do it for you.</span>
         </div>
       </section>
       <div className="wrap section stack" style={{ gap: 48 }}>

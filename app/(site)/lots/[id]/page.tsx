@@ -1,3 +1,4 @@
+import FirmBadge from '@/components/FirmBadge';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getSession, getWatchedIds } from '@/lib/supabase/server';
@@ -30,6 +31,7 @@ export default async function LotPage({ params }: { params: Promise<{ id: string
   const { auction_auctions: auction, ...rest } = data as Lot & { auction_auctions: Auction };
   const lot = rest as Lot;
   const watched = await getWatchedIds(supabase, user?.id);
+  const { data: firm } = auction.auctioneer_id ? await supabase.from('auction_auctioneers').select('slug, name, licence_no, logo').eq('id', auction.auctioneer_id).maybeSingle() : { data: null };
   let myMax: number | null = null;
   if (user) {
     const { data: m } = await supabase.from('auction_max_bids').select('max_amount').eq('lot_id', lot.id).eq('user_id', user.id).maybeSingle();
@@ -124,6 +126,7 @@ export default async function LotPage({ params }: { params: Promise<{ id: string
           <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14 }}>
             {auction.inspection_text && <div style={{ background: 'var(--surface)', borderRadius: 12, padding: 18 }}><b>Inspection</b><p className="small" style={{ marginTop: 6 }}>{auction.inspection_text}</p></div>}
             {auction.collection_text && <div style={{ background: 'var(--surface)', borderRadius: 12, padding: 18 }}><b>Collection</b><p className="small" style={{ marginTop: 6 }}>{auction.collection_text}</p></div>}
+            {firm && <div style={{ background: 'var(--surface)', borderRadius: 12, padding: 18 }}><FirmBadge firm={firm} compact />{auction.terms_text && <p className="small" style={{ marginTop: 8, whiteSpace: 'pre-line' }}>{auction.terms_text.slice(0, 400)}{auction.terms_text.length > 400 ? '…' : ''} <Link href={`/auctions/${auction.slug}`}>Full terms</Link></p>}</div>}
             <div style={{ background: 'var(--surface)', borderRadius: 12, padding: 18 }}><b>Fees</b><p className="small" style={{ marginTop: 6 }}>Buyer&apos;s premium {auction.premium_pct}% + 16% VAT on the premium{lot.vat_on_hammer ? ', plus 16% VAT on the hammer price' : ''}. <a href="/help#costs">How costs work</a></p></div>
           </section>
         </div>

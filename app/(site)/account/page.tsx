@@ -47,6 +47,7 @@ export default async function AccountPage() {
           <Link href="/watchlist" className="btn btn-outline btn-sm">Watchlist</Link>
           <Link href={profile.seller_status === 'approved' ? '/seller' : '/account/seller'} className="btn btn-outline btn-sm">{profile.seller_status === 'approved' ? 'Seller portal' : 'Sell on Mnada'}</Link>
           <Link href="/account/listing-help" className="btn btn-outline btn-sm">Listing Help</Link>
+          <Link href="/account/auctioneer" className="btn btn-outline btn-sm">Auctioneer firm</Link>
           <Link href="/account/ai" className="btn btn-outline btn-sm">AI tools</Link>
         </nav>
       )}

@@ -11,6 +11,8 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
   const { count: unread } = user
     ? await supabase.from('auction_notifications').select('id', { count: 'exact', head: true }).eq('user_id', user.id).is('read_at', null)
     : { count: 0 };
+  const { count: firmCount } = user ? await supabase.from('auction_auctioneer_members').select('user_id', { count: 'exact', head: true }).eq('user_id', user.id) : { count: 0 };
+  const isAuctioneer = (firmCount ?? 0) > 0;
   const [{ data: fLots }, { data: fListings }] = await Promise.all([
     supabase.from('auction_lots').select('id, title, category, photos, bid_count, current_bid, start_bid, auction_auctions!inner(status)')
       .eq('status', 'open').eq('auction_auctions.status', 'live').gt('closes_at', new Date().toISOString()).order('closes_at').limit(40),
@@ -49,6 +51,7 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
               <>
                 {profile?.is_admin && <Link href="/admin" className="plain">Admin</Link>}
                 {profile?.seller_status === 'approved' && <Link href="/seller" className="plain">Seller portal</Link>}
+                {isAuctioneer && <Link href="/auctioneer" className="plain">Auctioneer portal</Link>}
                 <Link href="/watchlist" className="plain">Watchlist</Link>
                 <Link href="/account/alerts" className="plain" style={{ position: 'relative' }}>
                   Alerts{(unread ?? 0) > 0 && <span className="pill" style={{ background: 'var(--accent)', color: '#fff', marginLeft: 6, padding: '2px 7px' }}>{unread}</span>}
@@ -87,6 +90,7 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
             <Link href="/sell">Request a valuation</Link>
             <Link href="/listing-help">Listing Help</Link>
             <Link href="/account/seller">Seller account</Link>
+            <Link href="/account/auctioneer">For auctioneers</Link>
           </div>
           <div className="stack" style={{ gap: 8 }}>
             <span style={{ color: '#fff', fontWeight: 600 }}>Help &amp; legal</span>

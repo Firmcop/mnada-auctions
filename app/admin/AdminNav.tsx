@@ -11,6 +11,7 @@ const ITEMS = [
   ['/admin/ai', 'AI tools & billing'],
   ['/admin/bidders', 'Bidders'],
   ['/admin/sellers', 'Sellers'],
+  ['/admin/auctioneers', 'Auctioneers'],
   ['/admin/consignments', 'Items sent for auction'],
   ['/admin/help', 'Listing Help jobs'],
   ['/admin/invoices', 'Payments & collection'],

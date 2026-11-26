@@ -1,3 +1,4 @@
+import FirmBadge from '@/components/FirmBadge';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
@@ -30,6 +31,7 @@ export default async function AuctionPage({ params, searchParams }: {
   const { data: auction } = await supabase.from('auction_auctions').select('*').eq('slug', slug).maybeSingle();
   if (!auction) notFound();
   const a = auction as Auction;
+  const { data: firm } = a.auctioneer_id ? await supabase.from('auction_auctioneers').select('slug, name, licence_no, logo').eq('id', a.auctioneer_id).maybeSingle() : { data: null };
   const { data } = await supabase.from('auction_lots').select('*').eq('auction_id', a.id).order('lot_no');
   const all = (data ?? []) as Lot[];
   const cats = Array.from(new Set(all.map((l) => l.category).filter(Boolean))) as string[];
@@ -58,6 +60,8 @@ export default async function AuctionPage({ params, searchParams }: {
           </span>
           <h1>{a.title}</h1>
           {a.description && <p style={{ color: 'var(--body)', maxWidth: 720 }}>{a.description}</p>}
+          {firm && <FirmBadge firm={firm} />}
+          {a.terms_text && <details className="small" style={{ maxWidth: 720 }}><summary style={{ cursor: 'pointer', fontWeight: 600 }}>Terms of sale for this auction</summary><p style={{ whiteSpace: 'pre-line', color: 'var(--body)' }}>{a.terms_text}</p></details>}
         </div>
         <aside className="card" style={{ flex: '1 1 320px', padding: 20, display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0,1fr))', gap: '14px 18px', fontSize: 14 }}>
           {a.first_close_at && <Info k="First lot closes" v={eat(a.first_close_at)} />}
