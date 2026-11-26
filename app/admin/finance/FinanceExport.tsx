@@ -1,5 +1,5 @@
 'use client';
-export type Line = { date: string; stream: string; ref: string; description: string; amount: number };
+import type { Line } from '@/lib/finance';
 
 export default function FinanceExport({ lines, period }: { lines: Line[]; period: string }) {
   async function download() {

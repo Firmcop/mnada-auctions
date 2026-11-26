@@ -17,6 +17,9 @@ const ITEMS = [
   ['/admin/invoices', 'Payments & collection'],
   ['/admin/payouts', 'Seller payouts'],
   ['/admin/finance', 'Finance'],
+  ['/admin/expenses', 'Expenses'],
+  ['/admin/reports', 'Reports'],
+  ['/admin/stock', 'Yard stock'],
   ['/admin/valuations', 'Valuation requests'],
 ];
 
