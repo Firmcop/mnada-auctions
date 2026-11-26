@@ -9,6 +9,7 @@ const ITEMS = [
   ['/seller/enquiries', 'Enquiries & offers'],
   ['/seller/allocations', 'Decisions (allocation)'],
   ['/seller/sales', 'Sales & payouts'],
+  ['/studio', 'Marketing Studio'],
   ['/account/listing-help', 'Listing Help'],
   ['/account/storage', 'Storage at the yard'],
 ];

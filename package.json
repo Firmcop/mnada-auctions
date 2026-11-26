@@ -8,10 +8,12 @@
     "start": "next start"
   },
   "dependencies": {
+    "@mediabunny/aac-encoder": "^1.66.5",
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.119.2",
     "@types/papaparse": "^5.5.2",
     "jszip": "^3.10.2",
+    "mediabunny": "^1.66.5",
     "next": "^16.4.6",
     "papaparse": "^5.7.1",
     "react": "^19.2.0",

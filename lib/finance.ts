@@ -12,7 +12,7 @@ export async function incomeLines(supabase: SupabaseClient, since: string, until
     supabase.from('auction_auctioneer_fees').select('reference, amount_kes, confirmed_at, auction_id').eq('status', 'paid').gte('confirmed_at', since).lt('confirmed_at', u),
     supabase.from('auction_help_payments').select('reference, kind, amount_kes, confirmed_at, request_id').eq('status', 'paid').gte('confirmed_at', since).lt('confirmed_at', u),
     supabase.from('auction_ai_payments').select('reference, purpose, amount_kes, confirmed_at').eq('status', 'paid').gte('confirmed_at', since).lt('confirmed_at', u),
-    supabase.from('auction_ai_ledger').select('amount_kes, cost_kes, internal, created_at').eq('kind', 'usage').gte('created_at', since).lt('created_at', u),
+    supabase.from('auction_ai_ledger').select('amount_kes, cost_kes, internal, created_at, action, note, kind').in('kind', ['usage', 'refund']).gte('created_at', since).lt('created_at', u),
     supabase.from('auction_help_requests').select('id, quote_subtotal_kes, quote_total_kes').not('quote_total_kes', 'is', null),
     supabase.from('auction_storage_charges').select('reference, description, amount_kes, vat_kes, confirmed_at').eq('status', 'paid').gte('confirmed_at', since).lt('confirmed_at', u),
   ]);
@@ -60,7 +60,10 @@ export async function incomeLines(supabase: SupabaseClient, since: string, until
     if (Number(c.vat_kes)) lines.push({ date: d(c.confirmed_at), stream: VAT_STREAM, ref: c.reference, description: `VAT · ${c.description}`, amount: Number(c.vat_kes) });
   }
   for (const a of aiPay ?? []) if (a.purpose === 'activation') lines.push({ date: d(a.confirmed_at), stream: 'AI tools', ref: a.reference, description: 'Activation', amount: Number(a.amount_kes) });
-  const aiUsage = (aiUse ?? []).filter((x) => !x.internal).reduce((s, x) => s + -Number(x.amount_kes), 0);
+  for (const x of (aiUse ?? []).filter((x) => !x.internal && String(x.action ?? '').startsWith('studio:') && x.action !== 'studio:script')) {
+    lines.push({ date: d(x.created_at), stream: 'Marketing Studio', ref: '', description: x.note ?? x.action, amount: -Number(x.amount_kes) });
+  }
+  const aiUsage = (aiUse ?? []).filter((x) => !x.internal && x.kind !== 'refund' && !(String(x.action ?? '').startsWith('studio:') && x.action !== 'studio:script')).reduce((s, x) => s + -Number(x.amount_kes), 0);
   const aiCost = (aiUse ?? []).reduce((s, x) => s + Number(x.cost_kes ?? 0), 0);
   if (aiUsage) lines.push({ date: d(new Date().toISOString()), stream: 'AI tools', ref: '', description: 'Metered usage (period total)', amount: aiUsage });
   return { lines, aiCost };

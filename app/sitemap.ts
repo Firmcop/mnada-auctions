@@ -24,6 +24,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/listing-help`, changeFrequency: 'monthly', priority: 0.6 },
     { url: `${SITE_URL}/storage`, changeFrequency: 'monthly', priority: 0.6 },
     { url: `${SITE_URL}/campus`, changeFrequency: 'weekly', priority: 0.5 },
+    { url: `${SITE_URL}/studio`, changeFrequency: 'monthly', priority: 0.5 },
     ...(firms ?? []).map((f) => ({ url: `${SITE_URL}/auctioneers/${f.slug}`, lastModified: new Date(f.updated_at), changeFrequency: 'weekly' as const, priority: 0.5 })),
     { url: `${SITE_URL}/help`, changeFrequency: 'monthly', priority: 0.4 },
     ...CATEGORY_TREE.flatMap((c) => [

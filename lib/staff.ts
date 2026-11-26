@@ -26,7 +26,7 @@ export const PAGE_AREA: [string, Area][] = [
   ['/admin/staff', 'staff'],
   ['/admin/finance', 'finance'], ['/admin/expenses', 'finance'], ['/admin/reports', 'finance'], ['/admin/payouts', 'finance'], ['/admin/ai', 'finance'], ['/admin/premium', 'finance'],
   ['/admin/bidders', 'people'], ['/admin/sellers', 'people'], ['/admin/invoices', 'people'], ['/admin/enquiries', 'people'], ['/admin/valuations', 'people'], ['/admin/consignments', 'people'], ['/admin/storage', 'people'], ['/admin/campus', 'people'],
-  ['/admin/auctioneers', 'operations'], ['/admin/allocations', 'operations'], ['/admin/help/services', 'operations'],
+  ['/admin/auctioneers', 'operations'], ['/admin/studio', 'operations'], ['/admin/allocations', 'operations'], ['/admin/help/services', 'operations'],
   ['/admin/auctions', 'catalogue'], ['/admin/lots', 'catalogue'], ['/admin/listings', 'catalogue'], ['/admin/import', 'catalogue'], ['/admin/stock', 'catalogue'], ['/admin/help', 'catalogue'],
 ];
 
