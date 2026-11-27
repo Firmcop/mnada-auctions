@@ -21,6 +21,10 @@ export default function PrivacyPage() {
       <h2>Identity documents</h2>
       <p>Uploaded documents are stored privately and are visible only to you and our verification staff.</p>
 
+      <h2 id="social">Connected social media accounts (Mnada Studio)</h2>
+      <p>If you choose to connect a Facebook Page, Instagram professional account, TikTok account or YouTube channel to Mnada Studio, we receive from that platform, with your permission: the account’s ID, name, username and profile picture, and an access token that lets Mnada publish the videos you schedule. For TikTok we also read the posting options the platform allows for your account (for example who can see the post).</p>
+      <p>We use this only to show you which accounts are connected and to publish the specific videos you have scheduled, at the times you chose, with the caption and settings you chose. We do not read your messages, followers, other posts or analytics, we do not post anything you did not schedule, and we never sell or share this data. Access tokens are stored encrypted and are only used by our posting service. You can disconnect an account at any time in Studio, which deletes our copy of its access token and cancels its scheduled posts; you can also remove Mnada’s access from the platform’s own settings. See <a href="/data-deletion">how to delete your data</a>.</p>
+
       <h2>How long we keep it</h2>
       <p>Account data for as long as your account is open; transaction and invoice records for [7] years for tax purposes; identity documents for [PERIOD] after your last transaction.</p>
 
@@ -28,7 +32,7 @@ export default function PrivacyPage() {
       <p>You may ask to see, correct or delete your data, object to its use, or withdraw consent to marketing, by writing to [EMAIL]. You may also complain to the Office of the Data Protection Commissioner.</p>
 
       <h2>Cookies</h2>
-      <p>We use only the cookies needed to keep you logged in and the site secure.</p>
+      <p>We use only the cookies needed to keep you logged in and the site secure, a referral cookie for 30 days when you open a Mnada Campus link, and a short-lived cookie while you connect a social account.</p>
     </article>
   );
 }

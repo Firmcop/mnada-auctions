@@ -1,5 +1,7 @@
 'use client';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
+import TikTokOptions, { type TikTokChoice } from '@/components/TikTokOptions';
+import { AccountList, PLATFORM_NAME, type SocialAccount } from '@/app/(site)/studio/AutopostPanel';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { kes } from '@/lib/format';
@@ -11,7 +13,32 @@ export type FeatureRow = {
   auction_studio_videos: { title: string; caption: string | null; link_code: string; clicks: number; target_path: string } | null; file_url: string | null;
 };
 
-export default function StudioAdmin({ settings: s, features, names, canFinance, autopostOn }: { settings: StudioSettings; features: FeatureRow[]; names: Record<string, string>; canFinance: boolean; autopostOn: boolean }) {
+function FeaturePost({ f, accounts, onSend }: { f: FeatureRow; accounts: SocialAccount[]; onSend: (body: unknown) => void }) {
+  const platforms = Array.from(new Set(accounts.map((a) => a.platform)));
+  const [pick, setPick] = useState<string[]>(platforms.filter((p) => p !== 'youtube'));
+  const [when, setWhen] = useState('');
+  const [tt, setTt] = useState<{ choice: TikTokChoice | null; problem: string | null }>({ choice: null, problem: null });
+  const onTt = useCallback((choice: TikTokChoice | null, problem: string | null) => setTt({ choice, problem }), []);
+  const ttAcc = accounts.find((a) => a.platform === 'tiktok');
+  if (!platforms.length) return <span className="small muted">Connect Mnada’s own accounts below to post automatically.</span>;
+  return (
+    <div className="stack" style={{ gap: 8 }}>
+      <div className="row" style={{ gap: 12, alignItems: 'flex-end' }}>
+        {platforms.map((p) => <label key={p} className="check small"><input type="checkbox" checked={pick.includes(p)} onChange={(e) => setPick((x) => (e.target.checked ? [...x, p] : x.filter((y) => y !== p)))} />{PLATFORM_NAME[p] ?? p}</label>)}
+        <label className="field" style={{ width: 210 }}><span className="small muted">When (empty = now)</span><input className="input" type="datetime-local" value={when} onChange={(e) => setWhen(e.target.value)} /></label>
+        <button type="button" className="btn btn-primary btn-sm" onClick={() => {
+          if (pick.includes('tiktok') && !tt.choice) { alert(tt.problem ?? 'Finish the TikTok choices'); return; }
+          onSend({ feature_id: f.id, platforms: pick, at: when ? new Date(when + ':00+03:00').toISOString() : new Date().toISOString(), caption: f.auction_studio_videos?.caption ?? '', tiktok: pick.includes('tiktok') ? tt.choice : undefined });
+        }}>Post on Mnada’s pages</button>
+      </div>
+      {pick.includes('tiktok') && ttAcc && <TikTokOptions accountId={ttAcc.id} durationSec={30} onChange={onTt} />}
+    </div>
+  );
+}
+
+export default function StudioAdmin({ settings: s, features, names, canFinance, mnadaAccounts, ready }: {
+  settings: StudioSettings; features: FeatureRow[]; names: Record<string, string>; canFinance: boolean; mnadaAccounts: SocialAccount[]; ready: { meta: boolean; youtube: boolean; tiktok: boolean };
+}) {
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
@@ -43,19 +70,7 @@ export default function StudioAdmin({ settings: s, features, names, canFinance, 
               {f.auction_studio_videos?.caption && <button type="button" className="btn btn-outline btn-sm" onClick={() => navigator.clipboard.writeText(f.auction_studio_videos!.caption!).then(() => setMsg({ ok: true, text: 'Caption copied.' }))}>Copy caption</button>}
               {f.status === 'requested' && <button type="button" className="btn btn-outline btn-sm" onClick={() => { const when = prompt('Post date and time (e.g. 2026-12-02 18:00)'); if (when) run(supabase.from('auction_studio_features').update({ status: 'scheduled', scheduled_for: new Date(when.replace(' ', 'T') + ':00+03:00').toISOString() }).eq('id', f.id), 'Scheduled.'); }}>Schedule</button>}
             </div>
-            {autopostOn && f.status === 'requested' && (
-              <form className="row" style={{ gap: 8, alignItems: 'flex-end' }} onSubmit={(e) => {
-                e.preventDefault(); const fd = new FormData(e.currentTarget);
-                const platforms = ['tiktok', 'instagram', 'facebook', 'youtube'].filter((p) => fd.get(p));
-                if (!platforms.length) { setMsg({ ok: false, text: 'Pick at least one of Mnada’s pages.' }); return; }
-                const when = String(fd.get('when') ?? '');
-                api('/api/studio/post', { feature_id: f.id, platforms, at: when ? new Date(when + ':00+03:00').toISOString() : new Date().toISOString(), caption: f.auction_studio_videos?.caption ?? '' }, 'Sent to Mnada’s pages');
-              }}>
-                {['tiktok', 'instagram', 'facebook', 'youtube'].map((p) => <label key={p} className="check small"><input type="checkbox" name={p} defaultChecked={p !== 'youtube'} />{p}</label>)}
-                <label className="field" style={{ width: 210 }}><span className="small muted">When (empty = now)</span><input className="input" type="datetime-local" name="when" /></label>
-                <button type="submit" className="btn btn-primary btn-sm">Post on Mnada pages automatically</button>
-              </form>
-            )}
+            {f.status === 'requested' && <FeaturePost f={f} accounts={mnadaAccounts} onSend={(b) => api('/api/studio/post', b, 'Scheduled on Mnada’s pages — it goes out within 2 minutes of the time')} />}
             {f.scheduled_for && <span className="small">Scheduled for {new Date(f.scheduled_for).toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Nairobi' })}</span>}
             <form className="row" style={{ gap: 8 }} onSubmit={(e) => {
               e.preventDefault(); const fd = new FormData(e.currentTarget);
@@ -74,6 +89,17 @@ export default function StudioAdmin({ settings: s, features, names, canFinance, 
             <ul className="small">{done.map((f) => <li key={f.id}>{f.auction_studio_videos?.title} — {f.status}{f.posted_links.map((l) => <a key={l} href={l} target="_blank" rel="noreferrer" style={{ marginLeft: 6 }}>link</a>)}</li>)}</ul>
           </details>
         )}
+      </section>
+
+      <section id="autopost" className="panel stack" style={{ gap: 10 }}>
+        <h3>Mnada’s own accounts</h3>
+        <span className="small muted">Connect Mnada’s Facebook Page, Instagram, TikTok and YouTube so feature requests can be posted automatically.</span>
+        <AccountList accounts={mnadaAccounts.filter((a) => a.status !== 'revoked')} onDisconnect={async (id) => { if (confirm('Disconnect this Mnada account?')) run(supabase.rpc('auction_social_disconnect', { p_account: id }), 'Disconnected.'); }} />
+        <div className="row" style={{ gap: 8 }}>
+          {ready.meta ? <a className="btn btn-outline btn-sm" href="/api/social/connect/meta?mnada=1">Connect Facebook &amp; Instagram</a> : <span className="small muted">Facebook/Instagram: needs META_APP_ID and META_APP_SECRET</span>}
+          {ready.tiktok ? <a className="btn btn-outline btn-sm" href="/api/social/connect/tiktok?mnada=1">Connect TikTok</a> : <span className="small muted">TikTok: needs TIKTOK_CLIENT_KEY and TIKTOK_CLIENT_SECRET</span>}
+          {ready.youtube ? <a className="btn btn-outline btn-sm" href="/api/social/connect/youtube?mnada=1">Connect YouTube</a> : <span className="small muted">YouTube: needs GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET</span>}
+        </div>
       </section>
 
       <form className="panel stack" style={{ gap: 10 }} onSubmit={(e) => {
@@ -99,10 +125,6 @@ export default function StudioAdmin({ settings: s, features, names, canFinance, 
           <button className="btn btn-primary" type="submit">Save</button>
         </fieldset>
         {!canFinance && <p className="small muted">Prices are set by Finance or an owner.</p>}
-        <div className="row" style={{ gap: 8, alignItems: 'center' }}>
-          <span className="small">{autopostOn ? 'Automatic posting is connected (AYRSHARE_API_KEY set).' : 'Automatic posting is off: add AYRSHARE_API_KEY in Vercel (Ayrshare Business plan). Reminders work without it.'}</span>
-          {autopostOn && <button type="button" className="btn btn-outline btn-sm" onClick={() => api('/api/studio/social', { action: 'register_webhook' }, 'Webhook registered — post results will update here.')}>Register results webhook</button>}
-        </div>
         <p className="small muted">AI writing uses the AI wallet’s metered rates (needs ANTHROPIC_API_KEY and a model price). AI voiceover needs ELEVENLABS_API_KEY and a voice id (ELEVENLABS_VOICE_ID, or _EN / _SW).</p>
       </form>
     </>

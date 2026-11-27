@@ -14,7 +14,8 @@ export const metadata = {
 
 const STATUS: Record<StudioVideo['status'], [string, string]> = { draft: ['Draft', 'pill-grey'], paid: ['Unlocked — render it', 'pill-warn'], ready: ['Ready to post', 'pill-green'] };
 
-export default async function StudioHome() {
+export default async function StudioHome({ searchParams }: { searchParams: Promise<{ connected?: string; n?: string; social_error?: string }> }) {
+  const sp = await searchParams;
   const { supabase, user, profile } = await getSession();
   const { data: st } = await supabase.from('auction_studio_settings').select('*').eq('id', 1).single();
   const s = st as StudioSettings;
@@ -51,13 +52,15 @@ export default async function StudioHome() {
   const uid = user.id;
   const firm = await myFirm(supabase, uid);
   const staff = !!profile.is_admin;
-  const [{ data: vids }, { data: camps }, { data: wallet }, { data: social }, { count: upcoming }] = await Promise.all([
+  const [{ data: vids }, { data: camps }, { data: wallet }, { data: social }, { count: upcoming }, { data: accounts }] = await Promise.all([
     supabase.from('auction_studio_videos').select('*').eq('owner_id', uid).order('created_at', { ascending: false }).limit(100),
     supabase.from('auction_studio_campaigns').select('id, auction_id, videos_allowed, created_at').eq('owner_id', uid),
     supabase.rpc('auction_ai_status'),
     supabase.from('auction_studio_social').select('platforms, status, paid_until, auto_renew').eq('owner_id', uid).maybeSingle(),
     supabase.from('auction_studio_posts').select('id', { count: 'exact', head: true }).eq('owner_id', uid).eq('status', 'scheduled'),
+    supabase.from('auction_social_accounts').select('id, platform, name, username, picture, status, last_error, is_mnada').eq('owner_id', uid).eq('is_mnada', false).neq('status', 'revoked').order('platform'),
   ]);
+  const notice = sp.social_error ? { ok: false, text: `Couldn’t connect: ${sp.social_error}` } : sp.connected ? { ok: true, text: `Connected ${sp.n ?? ''} account${sp.n === '1' ? '' : 's'}.` } : null;
 
   // sources this person may market
   const sources: Source[] = [];
@@ -89,7 +92,8 @@ export default async function StudioHome() {
           <span className="small muted">{videos.reduce((a, v) => a + v.clicks, 0)} clicks from your videos so far</span>
         </div>
         <NewVideo sources={sources} settings={s} campaigns={(camps ?? []).map((c) => ({ ...c, used: used(c.id) }))} staff={staff} />
-        <AutopostPanel social={social ?? null} price={s.price_autopost_month_kes} autopostOn={!!process.env.AYRSHARE_API_KEY} staff={staff} upcoming={upcoming ?? 0} />
+        <AutopostPanel sub={social ?? null} accounts={accounts ?? []} price={s.price_autopost_month_kes} staff={staff} upcoming={upcoming ?? 0} notice={notice}
+          ready={{ meta: !!(process.env.META_APP_ID && process.env.META_APP_SECRET), youtube: !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET), tiktok: !!(process.env.TIKTOK_CLIENT_KEY && process.env.TIKTOK_CLIENT_SECRET) }} />
         <section className="stack" style={{ gap: 12 }}>
           <h2>My videos</h2>
           {videos.length === 0 ? <p className="muted">No videos yet — pick something above to make your first one.</p> : (

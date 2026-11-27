@@ -1,10 +1,12 @@
 'use client';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
+import TikTokOptions, { type TikTokChoice } from '@/components/TikTokOptions';
 import { useRouter } from 'next/navigation';
 import { TEMPLATE_INFO, type Template } from '@/lib/studio';
 
 export type PostRow = { id: string; mode: string; platforms: string[]; scheduled_for: string; status: string; post_urls: { platform?: string | null; postUrl?: string | null }[]; error: string | null };
-export type Social = { platforms: string[]; status: string; paid_until: string | null } | null;
+export type Social = { status: string; paid_until: string | null } | null;
+export type Acct = { id: string; platform: string; name: string | null };
 
 const PLATFORMS: [string, string][] = [['tiktok', 'TikTok'], ['instagram', 'Instagram Reels'], ['facebook', 'Facebook Reels'], ['youtube', 'YouTube Shorts']];
 const ST: Record<string, [string, string]> = {
@@ -14,12 +16,16 @@ const ST: Record<string, [string, string]> = {
 const fmt = (iso: string) => new Date(iso).toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Nairobi' });
 const localInput = (d: Date) => new Date(d.getTime() + 3 * 3600e3).toISOString().slice(0, 16);
 
-export default function Scheduler({ videoId, ready, caption, plan, social, autopostOn, posts }: {
+export default function Scheduler({ videoId, ready, caption, plan, social, accounts, staff, durationSec, posts }: {
   videoId: string; ready: boolean; caption: string; plan: { at: string; what: string; template: Template }[];
-  social: Social; autopostOn: boolean; posts: PostRow[];
+  social: Social; accounts: Acct[]; staff: boolean; durationSec: number; posts: PostRow[];
 }) {
   const router = useRouter();
-  const connected = autopostOn && social?.status === 'active' && !!social.paid_until && new Date(social.paid_until) > new Date() ? social.platforms : [];
+  const subscribed = staff || (social?.status === 'active' && !!social.paid_until && new Date(social.paid_until) > new Date());
+  const connected = subscribed ? Array.from(new Set(accounts.map((a) => a.platform))) : [];
+  const ttAccount = accounts.find((a) => a.platform === 'tiktok');
+  const [tt, setTt] = useState<{ choice: TikTokChoice | null; problem: string | null }>({ choice: null, problem: null });
+  const onTt = useCallback((choice: TikTokChoice | null, problem: string | null) => setTt({ choice, problem }), []);
   const [mode, setMode] = useState<'auto' | 'reminder'>(connected.length ? 'auto' : 'reminder');
   const [platforms, setPlatforms] = useState<string[]>(connected.length ? connected : ['tiktok', 'instagram', 'facebook']);
   const [picked, setPicked] = useState<string[]>(plan.slice(0, 1).map((p) => p.at));
@@ -31,11 +37,13 @@ export default function Scheduler({ videoId, ready, caption, plan, social, autop
     const times = [...picked, ...(custom ? [new Date(custom + ':00+03:00').toISOString()] : [])];
     if (!times.length) { setMsg({ ok: false, text: 'Pick at least one time.' }); return; }
     if (mode === 'auto' && !platforms.some((p) => connected.includes(p))) { setMsg({ ok: false, text: 'Pick at least one connected account.' }); return; }
+    const withTt = mode === 'auto' && platforms.includes('tiktok') && connected.includes('tiktok');
+    if (withTt && !tt.choice) { setMsg({ ok: false, text: tt.problem ?? 'Finish the TikTok choices.' }); return; }
     setBusy(true); setMsg(null);
     const errs: string[] = [];
     for (const at of times) {
       const t = new Date(at).getTime() < Date.now() + 60_000 ? new Date(Date.now() + 60_000).toISOString() : at;
-      const res = await fetch('/api/studio/post', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ video_id: videoId, mode, platforms, at: t, caption }) });
+      const res = await fetch('/api/studio/post', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ video_id: videoId, mode, platforms, at: t, caption, tiktok: withTt ? tt.choice : undefined }) });
       const out = await res.json().catch(() => ({}));
       if (!res.ok) errs.push(out.error ?? 'Failed'); else if (out.error) errs.push(out.error);
     }
@@ -63,7 +71,7 @@ export default function Scheduler({ videoId, ready, caption, plan, social, autop
             <button type="button" className={`btn btn-sm ${mode === 'auto' ? 'btn-primary' : 'btn-outline'}`} disabled={!connected.length} onClick={() => setMode('auto')}>Post automatically</button>
             <button type="button" className={`btn btn-sm ${mode === 'reminder' ? 'btn-primary' : 'btn-outline'}`} onClick={() => setMode('reminder')}>Remind me to post</button>
           </div>
-          {!connected.length && <span className="small muted">{autopostOn ? <>To post automatically, connect your accounts under <a href="/studio#autopost">Auto-posting</a>.</> : 'Automatic posting is coming soon — reminders (notification + SMS) work now.'}</span>}
+          {!connected.length && <span className="small muted">To post automatically, turn on and connect your accounts under <a href="/studio#autopost">Auto-posting</a>. Reminders (notification + SMS) work now.</span>}
           <div className="row" style={{ gap: 12 }}>
             {PLATFORMS.map(([k, l]) => {
               const disabled = mode === 'auto' && !connected.includes(k);
@@ -71,6 +79,7 @@ export default function Scheduler({ videoId, ready, caption, plan, social, autop
             })}
             {mode === 'reminder' && <label className="check small"><input type="checkbox" checked={platforms.includes('whatsapp')} onChange={(e) => setPlatforms((x) => (e.target.checked ? [...x, 'whatsapp'] : x.filter((y) => y !== 'whatsapp')))} />WhatsApp Status</label>}
           </div>
+          {mode === 'auto' && platforms.includes('tiktok') && ttAccount && connected.includes('tiktok') && <TikTokOptions accountId={ttAccount.id} durationSec={durationSec} onChange={onTt} />}
           <div className="stack" style={{ gap: 4 }}>
             {plan.map((p) => (
               <label key={p.at} className="check small">

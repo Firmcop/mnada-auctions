@@ -7,17 +7,19 @@ import StudioAdmin, { type FeatureRow } from './StudioAdmin';
 
 export const dynamic = 'force-dynamic';
 
-export default async function AdminStudio() {
+export default async function AdminStudio({ searchParams }: { searchParams: Promise<{ connected?: string; n?: string; social_error?: string }> }) {
+  const sp = await searchParams;
   const role = await requireArea('operations');
   const supabase = await createClient();
   const since = new Date(Date.now() - 30 * 86400e3).toISOString();
-  const [{ data: st }, { data: feats }, { data: vids }, { data: ledger }, { data: posts }, { count: subs }] = await Promise.all([
+  const [{ data: st }, { data: feats }, { data: vids }, { data: ledger }, { data: posts }, { count: subs }, { data: mnadaAccounts }] = await Promise.all([
     supabase.from('auction_studio_settings').select('*').eq('id', 1).single(),
     supabase.from('auction_studio_features').select('*, auction_studio_videos(title, file_path, caption, link_code, clicks, target_path)').order('created_at', { ascending: false }).limit(200),
     supabase.from('auction_studio_videos').select('*').order('created_at', { ascending: false }).limit(200),
     canArea(role, 'finance') ? supabase.from('auction_ai_ledger').select('amount_kes, action, kind, internal').like('action', 'studio:%').gte('created_at', since) : Promise.resolve({ data: [] }),
     supabase.from('auction_studio_posts').select('id, owner_id, mode, platforms, scheduled_for, status, error, auction_studio_videos(title)').order('scheduled_for', { ascending: false }).limit(100),
     supabase.from('auction_studio_social').select('owner_id', { count: 'exact', head: true }).eq('status', 'active'),
+    supabase.from('auction_social_accounts').select('id, platform, name, username, picture, status, last_error, is_mnada').eq('is_mnada', true).neq('status', 'revoked').order('platform'),
   ]);
   const videos = (vids ?? []) as StudioVideo[];
   const owners = Array.from(new Set([...videos.map((v) => v.owner_id), ...(feats ?? []).map((f) => f.owner_id), ...(posts ?? []).map((p) => p.owner_id)]));
@@ -40,7 +42,10 @@ export default async function AdminStudio() {
         <div className="kpi"><span className="eyebrow">Clicks from videos</span><b>{videos.reduce((a, v) => a + v.clicks, 0)}</b></div>
         {canArea(role, 'finance') && <div className="kpi"><span className="eyebrow">Studio income, 30 days</span><b>KES {kes(income)}</b></div>}
       </div>
-      <StudioAdmin settings={st as StudioSettings} features={features} names={names} canFinance={canArea(role, 'finance')} autopostOn={!!process.env.AYRSHARE_API_KEY} />
+      {sp.social_error && <div className="alert alert-err">Couldn’t connect: {sp.social_error}</div>}
+      {sp.connected && <div className="alert alert-ok">Connected {sp.n} Mnada account(s).</div>}
+      <StudioAdmin settings={st as StudioSettings} features={features} names={names} canFinance={canArea(role, 'finance')} mnadaAccounts={mnadaAccounts ?? []}
+        ready={{ meta: !!(process.env.META_APP_ID && process.env.META_APP_SECRET), youtube: !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET), tiktok: !!(process.env.TIKTOK_CLIENT_KEY && process.env.TIKTOK_CLIENT_SECRET) }} />
       <section className="panel" style={{ overflowX: 'auto' }}>
         <h3 style={{ marginBottom: 10 }}>Scheduled and recent posts</h3>
         {(posts ?? []).length === 0 ? <p className="muted small">None yet.</p> : (

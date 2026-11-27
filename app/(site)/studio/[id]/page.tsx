@@ -11,13 +11,14 @@ export default async function StudioVideoPage({ params }: { params: Promise<{ id
   const { id } = await params;
   const { supabase, user, profile } = await getSession();
   if (!user) redirect(`/login?next=/studio/${id}`);
-  const [{ data: v }, { data: st }, { data: feats }, { data: wallet }, { data: posts }, { data: social }] = await Promise.all([
+  const [{ data: v }, { data: st }, { data: feats }, { data: wallet }, { data: posts }, { data: social }, { data: accounts }] = await Promise.all([
     supabase.from('auction_studio_videos').select('*').eq('id', id).maybeSingle(),
     supabase.from('auction_studio_settings').select('*').eq('id', 1).single(),
     supabase.from('auction_studio_features').select('id, status, posted_links, admin_note, created_at, posted_at').eq('video_id', id).order('created_at', { ascending: false }),
     supabase.rpc('auction_ai_status'),
     supabase.from('auction_studio_posts').select('id, mode, platforms, scheduled_for, status, post_urls, error').eq('video_id', id).order('scheduled_for', { ascending: false }).limit(50),
-    supabase.from('auction_studio_social').select('platforms, status, paid_until').eq('owner_id', user.id).maybeSingle(),
+    supabase.from('auction_studio_social').select('status, paid_until').eq('owner_id', user.id).maybeSingle(),
+    supabase.from('auction_social_accounts').select('id, platform, name').eq('owner_id', user.id).eq('is_mnada', false).eq('status', 'active'),
   ]);
   if (!v || v.owner_id !== user.id) notFound();
   const video = v as StudioVideo;
@@ -48,7 +49,7 @@ export default async function StudioVideoPage({ params }: { params: Promise<{ id
       </div>
       <Editor video={video} settings={st as StudioSettings} auctionTitle={auctionTitle} fileUrl={pub(video.file_path)} voiceUrl={pub(video.voice_path)}
         features={feats ?? []} balance={w?.balance_kes ?? 0} staff={!!w?.staff_internal || !!profile?.is_admin} campaignLeft={campaignLeft}
-        posts={posts ?? []} social={social ?? null} autopostOn={!!process.env.AYRSHARE_API_KEY} />
+        posts={posts ?? []} social={social ?? null} accounts={accounts ?? []} />
     </div>
   );
 }

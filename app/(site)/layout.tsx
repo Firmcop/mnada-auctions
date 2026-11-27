@@ -100,6 +100,7 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
             <Link href="/help">Help &amp; FAQ</Link>
             <Link href="/terms">Terms of sale</Link>
             <Link href="/privacy">Privacy policy</Link>
+            <Link href="/data-deletion">Delete your data</Link>
           </div>
         </div>
       </footer>
