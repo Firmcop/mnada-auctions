@@ -7,15 +7,16 @@ import {
   TEMPLATE_INFO, buildCaption, buildScript, postingPlan, shortLink, totalDuration, voiceFrom,
   type Lang, type Scene, type Script, type StudioSettings, type StudioVideo, type Template,
 } from '@/lib/studio';
+import Scheduler, { type PostRow, type Social } from './Scheduler';
 import { H, W, buildSoundtrack, canRender, drawFrame, loadAssets, renderMp4, voiceSeconds, type Assets, type Plan } from '@/lib/studio-render';
 
 type Feature = { id: string; status: string; posted_links: string[]; admin_note: string | null; created_at: string; posted_at: string | null };
 const KIND_LABEL: Record<Scene['kind'], string> = { intro: 'Opening', photo: 'Photo', item: 'Lot', price: 'Price', when: 'Closing time', cta: 'Call to action' };
 const FEATURE_LABEL: Record<string, string> = { requested: 'Requested — Mnada will schedule it', scheduled: 'Scheduled on Mnada pages', posted: 'Posted on Mnada pages', refused: 'Not posted — refunded' };
 
-export default function Editor({ video, settings, auctionTitle, fileUrl: initialFile, voiceUrl: initialVoice, features, balance, staff, campaignLeft }: {
+export default function Editor({ video, settings, auctionTitle, fileUrl: initialFile, voiceUrl: initialVoice, features, balance, staff, campaignLeft, posts, social, autopostOn }: {
   video: StudioVideo; settings: StudioSettings; auctionTitle: string; fileUrl: string | null; voiceUrl: string | null;
-  features: Feature[]; balance: number; staff: boolean; campaignLeft: number | null;
+  features: Feature[]; balance: number; staff: boolean; campaignLeft: number | null; posts: PostRow[]; social: Social; autopostOn: boolean;
 }) {
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
@@ -287,13 +288,7 @@ export default function Editor({ video, settings, auctionTitle, fileUrl: initial
             <textarea className="input" rows={6} value={caption} onChange={(e) => { setCaption(e.target.value); setDirty(true); }} />
           </section>
 
-          <section className="panel stack" style={{ gap: 8 }}>
-            <h3>When to post</h3>
-            <ul className="small" style={{ margin: 0, paddingLeft: 18, lineHeight: 1.9, color: 'var(--body)' }}>
-              {planList.map((p) => <li key={p.at}><b>{new Date(p.at).toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Nairobi' })}</b> — {p.what} <span className="muted">({TEMPLATE_INFO[p.template][0]})</span></li>)}
-            </ul>
-            <span className="small muted">Automatic posting to your pages is coming next. For now, post at these times from your phone.</span>
-          </section>
+          <Scheduler videoId={video.id} ready={status === 'ready'} caption={caption} plan={planList} social={social} autopostOn={autopostOn} posts={posts} />
 
           <section className="panel stack" style={{ gap: 8 }}>
             <h3>Feature on Mnada’s pages <span className="small muted">(KES {kes(settings.price_feature_kes)})</span></h3>

@@ -11,7 +11,7 @@ export type FeatureRow = {
   auction_studio_videos: { title: string; caption: string | null; link_code: string; clicks: number; target_path: string } | null; file_url: string | null;
 };
 
-export default function StudioAdmin({ settings: s, features, names, canFinance }: { settings: StudioSettings; features: FeatureRow[]; names: Record<string, string>; canFinance: boolean }) {
+export default function StudioAdmin({ settings: s, features, names, canFinance, autopostOn }: { settings: StudioSettings; features: FeatureRow[]; names: Record<string, string>; canFinance: boolean; autopostOn: boolean }) {
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
@@ -21,6 +21,12 @@ export default function StudioAdmin({ settings: s, features, names, canFinance }
     if (!error) router.refresh();
   }
   const n = (v: FormDataEntryValue | null, d: number) => { const x = Number(String(v ?? '').replace(/[^0-9.]/g, '')); return String(v ?? '').trim() === '' || !Number.isFinite(x) ? d : x; };
+  async function api(path: string, body: unknown, ok: string) {
+    const res = await fetch(path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+    const out = await res.json().catch(() => ({}));
+    setMsg(res.ok ? { ok: true, text: out.status ? `${ok} (${out.status})` : ok } : { ok: false, text: out.error ?? 'Failed' });
+    if (res.ok) router.refresh();
+  }
   const open = features.filter((f) => f.status === 'requested' || f.status === 'scheduled');
   const done = features.filter((f) => !(f.status === 'requested' || f.status === 'scheduled')).slice(0, 30);
   return (
@@ -37,6 +43,19 @@ export default function StudioAdmin({ settings: s, features, names, canFinance }
               {f.auction_studio_videos?.caption && <button type="button" className="btn btn-outline btn-sm" onClick={() => navigator.clipboard.writeText(f.auction_studio_videos!.caption!).then(() => setMsg({ ok: true, text: 'Caption copied.' }))}>Copy caption</button>}
               {f.status === 'requested' && <button type="button" className="btn btn-outline btn-sm" onClick={() => { const when = prompt('Post date and time (e.g. 2026-12-02 18:00)'); if (when) run(supabase.from('auction_studio_features').update({ status: 'scheduled', scheduled_for: new Date(when.replace(' ', 'T') + ':00+03:00').toISOString() }).eq('id', f.id), 'Scheduled.'); }}>Schedule</button>}
             </div>
+            {autopostOn && f.status === 'requested' && (
+              <form className="row" style={{ gap: 8, alignItems: 'flex-end' }} onSubmit={(e) => {
+                e.preventDefault(); const fd = new FormData(e.currentTarget);
+                const platforms = ['tiktok', 'instagram', 'facebook', 'youtube'].filter((p) => fd.get(p));
+                if (!platforms.length) { setMsg({ ok: false, text: 'Pick at least one of Mnada’s pages.' }); return; }
+                const when = String(fd.get('when') ?? '');
+                api('/api/studio/post', { feature_id: f.id, platforms, at: when ? new Date(when + ':00+03:00').toISOString() : new Date().toISOString(), caption: f.auction_studio_videos?.caption ?? '' }, 'Sent to Mnada’s pages');
+              }}>
+                {['tiktok', 'instagram', 'facebook', 'youtube'].map((p) => <label key={p} className="check small"><input type="checkbox" name={p} defaultChecked={p !== 'youtube'} />{p}</label>)}
+                <label className="field" style={{ width: 210 }}><span className="small muted">When (empty = now)</span><input className="input" type="datetime-local" name="when" /></label>
+                <button type="submit" className="btn btn-primary btn-sm">Post on Mnada pages automatically</button>
+              </form>
+            )}
             {f.scheduled_for && <span className="small">Scheduled for {new Date(f.scheduled_for).toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Nairobi' })}</span>}
             <form className="row" style={{ gap: 8 }} onSubmit={(e) => {
               e.preventDefault(); const fd = new FormData(e.currentTarget);
@@ -62,7 +81,7 @@ export default function StudioAdmin({ settings: s, features, names, canFinance }
         run(supabase.from('auction_studio_settings').update({
           enabled: f.get('enabled') === 'on', price_video_kes: n(f.get('video'), s.price_video_kes), price_campaign_kes: n(f.get('campaign'), s.price_campaign_kes),
           campaign_videos: n(f.get('cvideos'), s.campaign_videos), price_feature_kes: n(f.get('feature'), s.price_feature_kes), price_voice_kes: n(f.get('voice'), s.price_voice_kes),
-          free_rerenders: n(f.get('rerenders'), s.free_rerenders), mnada_handles: String(f.get('handles') ?? '').trim(), updated_at: new Date().toISOString(),
+          free_rerenders: n(f.get('rerenders'), s.free_rerenders), price_autopost_month_kes: n(f.get('autopost'), s.price_autopost_month_kes), autopost_open: f.get('autopost_open') === 'on', mnada_handles: String(f.get('handles') ?? '').trim(), updated_at: new Date().toISOString(),
         }).eq('id', 1), 'Studio prices saved.');
       }}>
         <h3>Prices &amp; settings</h3>
@@ -72,12 +91,18 @@ export default function StudioAdmin({ settings: s, features, names, canFinance }
           <label className="field" style={{ width: 150 }}>Videos in a pack<input className="input" name="cvideos" defaultValue={s.campaign_videos} /></label>
           <label className="field" style={{ width: 170 }}>Feature on Mnada pages<input className="input" name="feature" defaultValue={s.price_feature_kes} /></label>
           <label className="field" style={{ width: 140 }}>AI voiceover<input className="input" name="voice" defaultValue={s.price_voice_kes} /></label>
+          <label className="field" style={{ width: 190 }}>Auto-posting per month<input className="input" name="autopost" defaultValue={s.price_autopost_month_kes} /></label>
+          <label className="check"><input type="checkbox" name="autopost_open" defaultChecked={s.autopost_open} />Auto-posting open</label>
           <label className="field" style={{ width: 150 }}>Free re-renders<input className="input" name="rerenders" defaultValue={s.free_rerenders} /></label>
           <label className="field" style={{ flex: '1 1 260px' }}>Mnada’s handles (shown to customers)<input className="input" name="handles" defaultValue={s.mnada_handles} placeholder="@mnada.ke on TikTok, Instagram and Facebook" /></label>
           <label className="check"><input type="checkbox" name="enabled" defaultChecked={s.enabled} />Studio open</label>
           <button className="btn btn-primary" type="submit">Save</button>
         </fieldset>
         {!canFinance && <p className="small muted">Prices are set by Finance or an owner.</p>}
+        <div className="row" style={{ gap: 8, alignItems: 'center' }}>
+          <span className="small">{autopostOn ? 'Automatic posting is connected (AYRSHARE_API_KEY set).' : 'Automatic posting is off: add AYRSHARE_API_KEY in Vercel (Ayrshare Business plan). Reminders work without it.'}</span>
+          {autopostOn && <button type="button" className="btn btn-outline btn-sm" onClick={() => api('/api/studio/social', { action: 'register_webhook' }, 'Webhook registered — post results will update here.')}>Register results webhook</button>}
+        </div>
         <p className="small muted">AI writing uses the AI wallet’s metered rates (needs ANTHROPIC_API_KEY and a model price). AI voiceover needs ELEVENLABS_API_KEY and a voice id (ELEVENLABS_VOICE_ID, or _EN / _SW).</p>
       </form>
     </>

@@ -11,11 +11,13 @@ export default async function StudioVideoPage({ params }: { params: Promise<{ id
   const { id } = await params;
   const { supabase, user, profile } = await getSession();
   if (!user) redirect(`/login?next=/studio/${id}`);
-  const [{ data: v }, { data: st }, { data: feats }, { data: wallet }] = await Promise.all([
+  const [{ data: v }, { data: st }, { data: feats }, { data: wallet }, { data: posts }, { data: social }] = await Promise.all([
     supabase.from('auction_studio_videos').select('*').eq('id', id).maybeSingle(),
     supabase.from('auction_studio_settings').select('*').eq('id', 1).single(),
     supabase.from('auction_studio_features').select('id, status, posted_links, admin_note, created_at, posted_at').eq('video_id', id).order('created_at', { ascending: false }),
     supabase.rpc('auction_ai_status'),
+    supabase.from('auction_studio_posts').select('id, mode, platforms, scheduled_for, status, post_urls, error').eq('video_id', id).order('scheduled_for', { ascending: false }).limit(50),
+    supabase.from('auction_studio_social').select('platforms, status, paid_until').eq('owner_id', user.id).maybeSingle(),
   ]);
   if (!v || v.owner_id !== user.id) notFound();
   const video = v as StudioVideo;
@@ -45,7 +47,8 @@ export default async function StudioVideoPage({ params }: { params: Promise<{ id
         <a href={video.target_path} className="btn btn-outline btn-sm" target="_blank" rel="noreferrer">Open {video.source_kind === 'listing' ? 'listing' : video.source_kind}</a>
       </div>
       <Editor video={video} settings={st as StudioSettings} auctionTitle={auctionTitle} fileUrl={pub(video.file_path)} voiceUrl={pub(video.voice_path)}
-        features={feats ?? []} balance={w?.balance_kes ?? 0} staff={!!w?.staff_internal || !!profile?.is_admin} campaignLeft={campaignLeft} />
+        features={feats ?? []} balance={w?.balance_kes ?? 0} staff={!!w?.staff_internal || !!profile?.is_admin} campaignLeft={campaignLeft}
+        posts={posts ?? []} social={social ?? null} autopostOn={!!process.env.AYRSHARE_API_KEY} />
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { kes } from '@/lib/format';
 import { myFirm } from '@/lib/auctioneer';
 import { TEMPLATE_INFO, type StudioSettings, type StudioVideo } from '@/lib/studio';
 import NewVideo, { type Source } from './NewVideo';
+import AutopostPanel from './AutopostPanel';
 
 export const dynamic = 'force-dynamic';
 export const metadata = {
@@ -50,10 +51,12 @@ export default async function StudioHome() {
   const uid = user.id;
   const firm = await myFirm(supabase, uid);
   const staff = !!profile.is_admin;
-  const [{ data: vids }, { data: camps }, { data: wallet }] = await Promise.all([
+  const [{ data: vids }, { data: camps }, { data: wallet }, { data: social }, { count: upcoming }] = await Promise.all([
     supabase.from('auction_studio_videos').select('*').eq('owner_id', uid).order('created_at', { ascending: false }).limit(100),
     supabase.from('auction_studio_campaigns').select('id, auction_id, videos_allowed, created_at').eq('owner_id', uid),
     supabase.rpc('auction_ai_status'),
+    supabase.from('auction_studio_social').select('platforms, status, paid_until, auto_renew').eq('owner_id', uid).maybeSingle(),
+    supabase.from('auction_studio_posts').select('id', { count: 'exact', head: true }).eq('owner_id', uid).eq('status', 'scheduled'),
   ]);
 
   // sources this person may market
@@ -86,6 +89,7 @@ export default async function StudioHome() {
           <span className="small muted">{videos.reduce((a, v) => a + v.clicks, 0)} clicks from your videos so far</span>
         </div>
         <NewVideo sources={sources} settings={s} campaigns={(camps ?? []).map((c) => ({ ...c, used: used(c.id) }))} staff={staff} />
+        <AutopostPanel social={social ?? null} price={s.price_autopost_month_kes} autopostOn={!!process.env.AYRSHARE_API_KEY} staff={staff} upcoming={upcoming ?? 0} />
         <section className="stack" style={{ gap: 12 }}>
           <h2>My videos</h2>
           {videos.length === 0 ? <p className="muted">No videos yet — pick something above to make your first one.</p> : (

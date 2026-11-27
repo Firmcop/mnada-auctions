@@ -20,7 +20,7 @@ export type StudioVideo = {
 };
 export type StudioSettings = {
   enabled: boolean; price_video_kes: number; price_campaign_kes: number; campaign_videos: number; price_feature_kes: number;
-  price_voice_kes: number; free_rerenders: number; mnada_handles: string;
+  price_voice_kes: number; free_rerenders: number; mnada_handles: string; price_autopost_month_kes: number; autopost_open: boolean;
 };
 
 export const TEMPLATE_INFO: Record<Template, [string, string]> = {
